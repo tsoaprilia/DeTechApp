@@ -25,4 +25,8 @@ class Patient extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function radiographs()
+    {
+        return $this->hasMany(Radiograph::class, 'patient_nik', 'nik');
+    }
 }

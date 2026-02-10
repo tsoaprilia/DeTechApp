@@ -14,6 +14,12 @@ return new class extends Migration
     // Tabel Radiographs (Tempat menyimpan foto panoramik)
     Schema::create('radiographs', function (Blueprint $table) {
         $table->string('id_radiograph', 20)->primary();
+        $table->unsignedBigInteger('id_dokter')->nullable();
+        $table->foreign('id_dokter')->references('id')->on('users')->onDelete('set null');
+
+        $table->unsignedBigInteger('id_radiografer')->nullable();
+        $table->foreign('id_radiografer')->references('id')->on('users')->onDelete('set null');
+
         $table->string('patient_nik', 16); // Relasi ke tabel patients
         $table->string('image', 100); // Path file foto
         $table->enum('status', ['waiting', 'verified'])->default('waiting'); // Status deteksi

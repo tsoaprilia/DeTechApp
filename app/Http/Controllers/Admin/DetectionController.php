@@ -31,72 +31,73 @@ class DetectionController extends Controller
      * Proses Simpan Pasien & Upload Gambar
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'nik' => 'required|string|max:16',
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email',
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:10240',
-            'gender' => 'required|in:male,female',
-            'age' => 'required|numeric',
-            'phone' => 'nullable|string|max:15',
-            'birth_place' => 'required|string',
-            'birth_date' => 'required|date',
-            'address' => 'required|string',
-        ]);
+{
+    // 1. Validasi input dari form saja
+    $request->validate([
+        'nik' => 'required|string|max:16',
+        'name' => 'required|string|max:255',
+        'email' => 'nullable|email',
+        'image' => 'required|image|mimes:jpeg,png,jpg|max:10240',
+        'gender' => 'required|in:male,female',
+        'age' => 'required|numeric',
+        'phone' => 'nullable|string|max:15',
+        'birth_place' => 'required|string',
+        'birth_date' => 'required|date',
+        'address' => 'required|string',
+        // JANGAN masukkan auth()->id() di sini
+    ]);
 
-        return DB::transaction(function () use ($request) {
-            $patient = Patient::find($request->nik);
+    return DB::transaction(function () use ($request) {
+        $patient = Patient::find($request->nik);
 
-            if (!$patient) {
-                // Buat User Baru jika Pasien Belum Ada
-                $emailFinal = $request->email ?: $request->nik . '@detech.id';
+        if (!$patient) {
+            $emailFinal = $request->email ?: $request->nik . '@detech.id';
 
-                $user = User::create([
-                    'name' => $request->name,
-                    'email' => $emailFinal,
-                    'password' => Hash::make('password'), 
-                    'phone' => $request->phone,
-                    'role' => 'pasien',
-                ]);
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $emailFinal,
+                'password' => Hash::make('password'), 
+                'phone' => $request->phone,
+                'role' => 'pasien',
+            ]);
 
-                $formattedDate = Carbon::parse($request->birth_date)->format('Y-m-d');
-                
-                $patient = Patient::create([
-                    'nik' => $request->nik,
-                    'user_id' => $user->id,
-                    'birth_place' => $request->birth_place,
-                    'birth_date' => $formattedDate,
-                    'address' => $request->address,
-                    'age' => $request->age,
-                    'gender' => $request->gender,
-                ]);
-            }
+            $formattedDate = Carbon::parse($request->birth_date)->format('Y-m-d');
+            
+            $patient = Patient::create([
+                'nik' => $request->nik,
+                'user_id' => $user->id,
+                'birth_place' => $request->birth_place,
+                'birth_date' => $formattedDate,
+                'address' => $request->address,
+                'age' => $request->age,
+                'gender' => $request->gender,
+            ]);
+        }
 
-            // Simpan Gambar ke Storage
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('radiographs', 'public');
-                
-                // Generate ID RAD Otomatis
-                $id_rad = 'RAD-' . date('dmy') . '-' . sprintf('%03d', Radiograph::count() + 1);
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('radiographs', 'public');
+            
+            $id_rad = 'RAD-' . date('dmy') . '-' . sprintf('%03d', Radiograph::count() + 1);
 
-                Radiograph::create([
-                    'id_radiograph' => $id_rad,
-                    'patient_nik' => $patient->nik,
-                    'image' => $path,
-                    'status' => 'waiting',
-                ]);
+            // 2. Masukkan ID Radiografer langsung saat create Radiograph
+            Radiograph::create([
+                'id_radiograph' => $id_rad,
+                'patient_nik' => $patient->nik,
+                'image' => $path,
+                'status' => 'waiting',
+                'id_radiografer' => auth()->id(), // Mencatat siapa yang upload
+            ]);
 
-                // Redirect ke Halaman Detail
-return redirect()->route('admin.deteksi.detail', $id_rad);            }
+            return redirect()->route('admin.deteksi.detail', $id_rad);
+        }
 
-            return back()->withErrors(['image' => 'Gagal memproses gambar.']);
-        });
-    }
+        return back()->withErrors(['image' => 'Gagal memproses gambar.']);
+    });
+}
 
    public function show($id)
     {
-        $radiograph = Radiograph::with(['patient.user', 'detections'])->findOrFail($id);
+        $radiograph = Radiograph::with(['patient.user', 'detections', 'radiografer', 'dokter'])->findOrFail($id);
         return Inertia::render('Admin/DetailDeteksi', ['radiograph' => $radiograph]);
     }
 
@@ -119,27 +120,36 @@ return redirect()->route('admin.deteksi.detail', $id_rad);            }
         }
     }
 
-    public function finalize(Request $request, $id)
-    {
-        $detections = $request->input('selected_detections');
+   
+  public function finalize(Request $request, $id)
+{
+    $detections = $request->input('selected_detections');
 
-        return DB::transaction(function () use ($detections, $id) {
-            $radiograph = Radiograph::findOrFail($id);
-            
-            if ($detections) {
-                foreach ($detections as $item) {
-                    DB::table('detections')->insert([
-                        'id_radiograph' => $id,
-                        'no_fdi'        => $item['fdi'],
-                        'analysis'      => $item['keterangan'] ?? null,
-                        'created_at'    => now(),
-                        'updated_at'    => now(),
-                    ]);
-                }
+    return DB::transaction(function () use ($detections, $id) {
+        $radiograph = Radiograph::findOrFail($id);
+        
+        // 1. Simpan detail gigi ke tabel detections (HAPUS id_dokter DARI SINI)
+        if (!empty($detections)) {
+            foreach ($detections as $item) {
+                DB::table('detections')->insert([
+                    'id_radiograph' => $id,
+                    'no_fdi'        => $item['fdi'],
+                    'analysis'      => $item['keterangan'] ?? 'Akurat', 
+                    // id_dokter tidak boleh ada di sini karena akan menyebabkan error
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
             }
+        }
 
-            $radiograph->update(['status' => 'verified']);
-            return redirect()->route('admin.deteksi.detail', $id)->with('success', 'Data diverifikasi.');
-        });
-    }
+        // 2. Simpan ID Dokter di tabel radiographs (TEMPAT YANG BENAR)
+        $radiograph->update([
+            'status'    => 'verified',
+            'id_dokter' => auth()->id() // Mencatat ID user yang sedang login
+        ]);
+        
+        return redirect()->route('admin.deteksi.detail', $id)
+                         ->with('success', 'Hasil berhasil diverifikasi oleh ' . auth()->user()->name);
+    });
+}
 }

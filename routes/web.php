@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\DetectionController;
 use App\Http\Controllers\Admin\RadiograferController;
+use App\Http\Controllers\Admin\PasienController;
+use App\Http\Controllers\Admin\DokterController;
+use App\Http\Controllers\Admin\RiwayatController;
 
 
 // 1. Halaman Landing Page
@@ -41,17 +44,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Rute Deteksi
     Route::get('/deteksi', [DetectionController::class, 'index'])->name('deteksi');
     Route::post('/deteksi/store', [DetectionController::class, 'store'])->name('deteksi.store');
-    
-    // Gunakan nama 'deteksi.detail' agar sinkron
     Route::get('/deteksi/detail/{id}', [DetectionController::class, 'show'])->name('deteksi.detail');
-
-    // Rute Tahap 1: Panggil Flask YOLO
     Route::post('/deteksi/analyze/{id}', [DetectionController::class, 'analyze'])->name('deteksi.analyze');
-
-    // Rute Tahap 2: Simpan Final Verifikasi Dokter
     Route::post('/deteksi/finalize/{id}', [DetectionController::class, 'finalize'])->name('deteksi.finalize');
 
     Route::resource('radiografer', RadiograferController::class);
+    Route::resource('pasien', PasienController::class);
+
+    // PERBAIKAN: Hapus awalan 'admin.' pada name() karena sudah ada di grup
+    Route::get('/pasien/{nik}/riwayat', [PasienController::class, 'riwayat'])->name('pasien.riwayat');
+
+    Route::resource('dokter', DokterController::class);
+    Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat');
+    Route::delete('/riwayat/{id}', [RiwayatController::class, 'destroy'])->name('riwayat.destroy');
 });
     // --- AREA RADIOGRAFER ---
     Route::middleware('role:radiografer')->prefix('radiografer')->group(function () {
@@ -61,6 +66,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // --- AREA DOKTER ---
     Route::middleware('role:dokter')->prefix('dokter')->group(function () {
         Route::get('/dashboard', fn() => Inertia::render('Dokter/Dashboard'))->name('dokter.dashboard');
+        
     });
 
     // --- AREA PROFILE (Bisa diakses semua role) ---

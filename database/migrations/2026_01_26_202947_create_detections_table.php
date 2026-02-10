@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('detections', function (Blueprint $table) {
         $table->id('id_detection');
-        $table->string('id_radiograph', 10);
+        $table->string('id_radiograph', 20);
         $table->integer('no_fdi'); // Nomor Gigi Susu
         $table->string('analysis', 100); // Koordinat atau hasil analisis
         $table->timestamps();

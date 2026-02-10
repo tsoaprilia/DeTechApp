@@ -6,9 +6,7 @@ import {
     User, 
     Users, 
     RefreshCcw, 
-    LogOut,
-    Stethoscope,
-    History
+    LogOut 
 } from 'lucide-react';
 
 interface Props {
@@ -18,57 +16,13 @@ interface Props {
 }
 
 export default function Sidebar({ isOpen, setIsOpen, auth }: Props) {
-    const role = auth.user.role;
-
-    // Daftar semua menu yang mungkin ada
-    const allMenuItems = [
-        { 
-            name: 'Dashboard', 
-            icon: <LayoutGrid size={20} fill="currentColor" />, 
-            link: role === 'admin' ? 'admin.dashboard' : (role === 'dokter' ? 'dokter.dashboard' : 'radiografer.dashboard'),
-            roles: ['admin', 'dokter', 'radiografer'] 
-        },
-        { 
-            name: 'Deteksi Gigi Susu', 
-            icon: <GitFork size={20} />, 
-            link: 'admin.deteksi', 
-            roles: ['admin', 'radiografer'] 
-        },
-        { 
-            name: 'Radiografer', 
-            icon: <Camera size={20} fill="currentColor" />, 
-            link: 'admin.radiografer.index', 
-            roles: ['admin'] 
-        },
-        { 
-            name: 'Data Dokter', 
-            icon: <User size={20} fill="currentColor" />, 
-            link: 'admin.dokter.index', 
-            roles: ['admin'] 
-        },
-        { 
-            name: 'Data Pasien', 
-            icon: <Users size={20} fill="currentColor" />, 
-            link: 'admin.pasien.index', 
-            roles: ['admin', 'dokter'] 
-        },
-        { 
-            name: 'Riwayat Deteksi', 
-            icon: <RefreshCcw size={20} />, 
-            link: 'admin.riwayat', 
-            roles: ['admin'] 
-        },
-        // Menu Khusus Dokter untuk melihat riwayat verifikasi mereka sendiri
-        {
-            name: 'Tugas Verifikasi',
-            icon: <Stethoscope size={20} />,
-            link: 'admin.pasien.index', // Sesuaikan jika ada rute khusus verifikasi dokter
-            roles: ['dokter']
-        }
+    const menuItems = [
+        { name: 'Dashboard', icon: <LayoutGrid size={20} fill="currentColor" />, link: 'admin.dashboard' },
+        { name: 'Deteksi Gigi Susu', icon: <GitFork size={20} />, link: 'admin.deteksi' },
+        { name: 'Data Dokter', icon: <User size={20} fill="currentColor" />, link: 'admin.dokter.index' },
+        { name: 'Data Pasien', icon: <Users size={20} fill="currentColor" />, link: 'admin.pasien.index' },
+        { name: 'Riwayat Deteksi', icon: <RefreshCcw size={20} />, link: 'admin.riwayat' },
     ];
-
-    // Filter menu berdasarkan role user yang sedang login
-    const filteredMenuItems = allMenuItems.filter(item => item.roles.includes(role));
 
     return (
         <>
@@ -77,14 +31,13 @@ export default function Sidebar({ isOpen, setIsOpen, auth }: Props) {
             <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-[#053247] transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 flex flex-col`}>
                 
                 <div className="p-8 mb-6 flex items-center gap-3">
+                    {/* <img src="/assets/images/logo-detech.png" alt="Logo" className="h-10 w-auto brightness-0 invert" /> */}
                     <span className="text-2xl font-black text-white tracking-tighter uppercase ">DETECH</span>
-                    <div className="px-2 py-0.5 bg-white/10 rounded-md text-[10px] text-white/50 font-bold border border-white/10 uppercase tracking-widest">
-                        {role}
-                    </div>
                 </div>
 
                 <nav className="flex-1 flex flex-col pl-4 relative space-y-1">
-                    {filteredMenuItems.map((item, index) => {
+                    {menuItems.map((item, index) => {
+                        // PERBAIKAN: Cek Route Aktif termasuk sub-route (wildcard)
                         const isActive = item.link !== '#' && (
                             route().current(item.link) || route().current(item.link + '.*')
                         );

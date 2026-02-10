@@ -10,7 +10,7 @@ class Radiograph extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['id_radiograph', 'patient_nik', 'image', 'status'];
+    protected $fillable = ['id_radiograph','id_dokter', 'id_radiografer', 'patient_nik', 'image', 'status'];
 
     public function patient() {
         return $this->belongsTo(Patient::class, 'patient_nik', 'nik');
@@ -19,4 +19,13 @@ class Radiograph extends Model
     public function detections() {
         return $this->hasMany(Detection::class, 'id_radiograph', 'id_radiograph');
     }
+    public function dokter()
+{
+    return $this->belongsTo(User::class, 'id_dokter');
+}
+
+public function radiografer()
+{
+    return $this->belongsTo(User::class, 'id_radiografer');
+}
 }
