@@ -101,24 +101,34 @@ class DetectionController extends Controller
         return Inertia::render('Admin/DetailDeteksi', ['radiograph' => $radiograph]);
     }
 
-    public function analyze($id)
-    {
-        $radiograph = Radiograph::findOrFail($id);
-        $fullPath = str_replace('\\', '/', storage_path('app/public/' . $radiograph->image));
+   // DetectionController.php
 
-        try {
-            $response = Http::timeout(120)->post('http://127.0.0.1:5000/predict', ['image_path' => $fullPath]);
+// DetectionController.php
 
-            if ($response->successful()) {
-                $data = $response->json();
-                // Kirim ke session flash agar ditangkap Middleware
-                session()->flash('temp_results', $data['results']);
-                return redirect()->back();
-            }
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Gagal konek ke Flask: ' . $e->getMessage()]);
+public function analyze($id)
+{
+    $radiograph = Radiograph::with(['patient.user', 'detections', 'radiografer', 'dokter'])->findOrFail($id);
+    $fullPath = str_replace('\\', '/', storage_path('app/public/' . $radiograph->image));
+
+    try {
+        $response = Http::timeout(120)->post('http://127.0.0.1:5000/predict', [
+            'image_path' => $fullPath
+        ]);
+
+        if ($response->successful()) {
+            $data = $response->json();
+
+            // Jangan pakai redirect()->back(), tapi render ulang halamannya dengan data baru
+            return Inertia::render('Admin/DetailDeteksi', [
+                'radiograph' => $radiograph,
+                'temp_results' => $data['results'],
+                'temp_image' => 'radiographs/' . $data['result_image']
+            ]);
         }
+    } catch (\Exception $e) {
+        return back()->withErrors(['error' => $e->getMessage()]);
     }
+}
 
    
   public function finalize(Request $request, $id)

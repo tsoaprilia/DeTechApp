@@ -10,7 +10,7 @@ import {
 const TOP_TEETH = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
 const BOTTOM_TEETH = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
 
-export default function DetailDeteksi({ auth, radiograph }: any) {
+export default function DetailDeteksi({ auth, radiograph,temp_results, temp_image }: any) {
     const { flash }: any = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { post, processing } = useForm();
@@ -18,18 +18,29 @@ export default function DetailDeteksi({ auth, radiograph }: any) {
     const [progress, setProgress] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
     const [curatedData, setCuratedData] = useState<any[]>([]);
+    const [displayImage, setDisplayImage] = useState(radiograph.image);
     const p = radiograph.patient;
 
     const radiograferName = radiograph.radiografer?.name || 'Admin DeTech';
     const dokterName = radiograph.dokter?.name || (radiograph.status === 'verified' ? 'Admin DeTech' : 'Belum Diverifikasi');
 
-    useEffect(() => {
-        if (flash?.temp_results) {
-            setCuratedData(flash.temp_results.map((res: any) => ({
-                fdi: res.fdi, is_selected: true, keterangan: ''
+ // 1. Hapus line: const [hasUpdatedImage, setHasUpdatedImage] = useState(false);
+
+useEffect(() => {
+        // Jika ada data deteksi baru dari props
+        if (temp_results) {
+            setCuratedData(temp_results.map((res: any) => ({
+                fdi: res.fdi, 
+                is_selected: true, 
+                keterangan: ''
             })));
         }
-    }, [flash?.temp_results]);
+        
+        // Jika ada gambar baru dari props
+        if (temp_image) {
+            setDisplayImage(`${temp_image}?t=${new Date().getTime()}`);
+        }
+    }, [temp_results, temp_image]); // Pantau props langsung
 
     const handleStartDetection = () => {
         setIsProcessing(true);
@@ -128,17 +139,51 @@ export default function DetailDeteksi({ auth, radiograph }: any) {
                         </section>
                     </div>
 
-                    {/* SECTION 2: PREVIEW GAMBAR */}
-                    <section className="bg-white p-10 rounded-[40px] shadow-sm border border-[#C3E3EE] space-y-8">
-                        <div className="rounded-[30px] overflow-hidden bg-black flex justify-center border-4 border-[#F1FBFF] shadow-inner">
-                            <img src={`/detech/public/storage/${radiograph.image}`} className="max-h-[400px] object-contain" alt="Radiografi" />
-                        </div>
+                   {/* SECTION 2: PREVIEW GAMBAR */}
+<section className="bg-white p-10 rounded-[40px] shadow-sm border border-[#C3E3EE] space-y-8">
+    <div className={`grid gap-6 ${curatedData.length > 0 && radiograph.status === 'waiting' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+        
+        {/* GAMBAR UTAMA: Selalu Tampil */}
+        <div className="space-y-4 text-center">
+            {curatedData.length > 0 && radiograph.status === 'waiting' && (
+                <p className="text-xs font-black text-[#8BAFBF] uppercase tracking-widest">Original Image</p>
+            )}
+            <div className="rounded-[30px] overflow-hidden bg-black flex justify-center border-4 border-[#F1FBFF] shadow-inner">
+                <img 
+                    src={`/storage/${radiograph.image}`} 
+                    className="max-h-[450px] object-contain" 
+                    alt="Radiografi Pasien" 
+                />
+            </div>
+        </div>
 
-                        {radiograph.status === 'waiting' && curatedData.length === 0 && (
-                            <button onClick={handleStartDetection} disabled={isProcessing || processing} className="w-full py-5 bg-[#425F6A] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg hover:bg-[#344d57] transition-all text-center">
-                                {isProcessing ? <><RefreshCcw className="animate-spin" /> Memproses {progress}%</> : 'Mulai Deteksi YOLOv11'}
-                            </button>
-                        )}
+        {/* GAMBAR HASIL AI: HANYA TAMPIL SAAT STATUS WAITING (PROSES VERIFIKASI) */}
+        {radiograph.status === 'waiting' && curatedData.length > 0 && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-700">
+                <p className="text-xs font-black text-emerald-500 uppercase tracking-widest text-center">
+                    AI Detection (YOLOv11)
+                </p>
+                <div className="rounded-[30px] overflow-hidden bg-black flex justify-center border-4 border-emerald-100 shadow-inner">
+                    <img 
+                        key={displayImage}
+                        src={`/storage/${displayImage.replace('/storage/', '').replace('storage/', '')}`} 
+                        className="max-h-[450px] object-contain" 
+                        alt="Hasil Deteksi AI"
+                        onError={(e: any) => {
+                            e.target.src = `/${displayImage.replace('radiographs/', 'radiographs/')}`;
+                        }}
+                    />
+                </div>
+            </div>
+        )}
+    </div>
+
+    {/* Tombol Deteksi: Hanya tampil jika belum dideteksi */}
+    {radiograph.status === 'waiting' && curatedData.length === 0 && (
+        <button onClick={handleStartDetection} disabled={isProcessing || processing} className="w-full py-5 bg-[#425F6A] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg hover:bg-[#344d57] transition-all">
+            {isProcessing ? <><RefreshCcw className="animate-spin" /> Memproses {progress}%</> : 'Mulai Deteksi YOLOv11'}
+        </button>
+    )}
 
                         {/* SECTION 3: TABEL VERIFIKASI */}
                         {curatedData.length > 0 && radiograph.status === 'waiting' && (
