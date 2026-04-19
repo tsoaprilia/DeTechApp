@@ -8,7 +8,7 @@ export default function DokterDashboard({ auth }: { auth: any }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="flex h-screen bg-[#053247] overflow-hidden font['DM_Sans'] text-left">
+        <div className="flex h-screen bg-[#053247] overflow-hidden fontsans text-left">
             <Head title="Dokter Dashboard - DeTech" />
 
             {/* Sidebar khusus Dokter */}

@@ -45,7 +45,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/deteksi', [DetectionController::class, 'index'])->name('deteksi');
     Route::post('/deteksi/store', [DetectionController::class, 'store'])->name('deteksi.store');
     Route::get('/deteksi/detail/{id}', [DetectionController::class, 'show'])->name('deteksi.detail');
-    Route::post('/deteksi/analyze/{id}', [DetectionController::class, 'analyze'])->name('deteksi.analyze');
+    Route::get('/deteksi/analyze/{id}', [DetectionController::class, 'analyze'])->name('deteksi.analyze');
     Route::post('/deteksi/finalize/{id}', [DetectionController::class, 'finalize'])->name('deteksi.finalize');
 
     Route::resource('radiografer', RadiograferController::class);

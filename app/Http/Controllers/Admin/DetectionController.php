@@ -96,10 +96,19 @@ class DetectionController extends Controller
 }
 
    public function show($id)
-    {
-        $radiograph = Radiograph::with(['patient.user', 'detections', 'radiografer', 'dokter'])->findOrFail($id);
-        return Inertia::render('Admin/DetailDeteksi', ['radiograph' => $radiograph]);
-    }
+{
+    $radiograph = Radiograph::with([
+        'patient.user', 
+        'radiografer', 
+        'dokter',
+        // Ambil detections dan urutkan berdasarkan ID terbesar (terbaru)
+        'detections' => function($query) {
+            $query->orderBy('id_detection', 'desc');
+        }
+    ])->findOrFail($id);
+
+    return Inertia::render('Admin/DetailDeteksi', ['radiograph' => $radiograph]);
+}
 
    // DetectionController.php
 
@@ -118,18 +127,17 @@ public function analyze($id)
         if ($response->successful()) {
             $data = $response->json();
 
-            // Jangan pakai redirect()->back(), tapi render ulang halamannya dengan data baru
+            // PAKAI RENDER (Bukan Redirect): Data jadi Props permanen
             return Inertia::render('Admin/DetailDeteksi', [
                 'radiograph' => $radiograph,
                 'temp_results' => $data['results'],
-                'temp_image' => 'radiographs/' . $data['result_image']
+                'temp_image' => 'radiographs/' . $data['result_image'] // Pastikan ada result_
             ]);
         }
     } catch (\Exception $e) {
         return back()->withErrors(['error' => $e->getMessage()]);
     }
 }
-
    
   public function finalize(Request $request, $id)
 {
@@ -138,6 +146,9 @@ public function analyze($id)
     return DB::transaction(function () use ($detections, $id) {
         $radiograph = Radiograph::findOrFail($id);
         
+        // --- BARIS WAJIB: Hapus data deteksi lama milik radiografi ini agar tidak duplikat ---
+        DB::table('detections')->where('id_radiograph', $id)->delete();
+
         // 1. Simpan detail gigi ke tabel detections (HAPUS id_dokter DARI SINI)
         if (!empty($detections)) {
             foreach ($detections as $item) {

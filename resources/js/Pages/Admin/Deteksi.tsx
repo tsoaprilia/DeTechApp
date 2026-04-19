@@ -39,7 +39,7 @@ export default function DeteksiGigi({ auth, patients = [] }: { auth: any, patien
         minHeight: '56px',
         boxShadow: 'none',
         '&:hover': { borderColor: '#053247' },
-        fontFamily: 'DM Sans',
+        fontFamily: 'Inter',
         fontSize: '14px',
         fontWeight: '500', 
         // Mengubah warna teks input utama menjadi Biru Dongker
@@ -66,7 +66,7 @@ export default function DeteksiGigi({ auth, patients = [] }: { auth: any, patien
         backgroundColor: state.isSelected ? '#053247' : state.isFocused ? '#F1FBFF' : 'transparent',
         // Teks Dongker jika tidak dipilih, Putih jika dipilih
         color: state.isSelected ? 'white' : '#053247', 
-        fontFamily: 'DM Sans',
+        fontFamily: 'Inter',
         fontSize: '14px',
         fontWeight: state.isSelected ? '600' : '500',
         padding: '12px 16px',
