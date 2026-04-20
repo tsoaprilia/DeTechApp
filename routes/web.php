@@ -9,7 +9,7 @@ use App\Http\Controllers\Admin\RadiograferController;
 use App\Http\Controllers\Admin\PasienController;
 use App\Http\Controllers\Admin\DokterController;
 use App\Http\Controllers\Admin\RiwayatController;
-
+use App\Http\Controllers\Pasien\DashboardController as PasienDashboard;
 
 // 1. Halaman Landing Page
 Route::get('/', function () {
@@ -32,10 +32,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'admin'       => redirect()->route('admin.dashboard'),
             'radiografer' => redirect()->route('radiografer.dashboard'),
             'dokter'      => redirect()->route('dokter.dashboard'),
-            default       => Inertia::render('Dashboard'), // Untuk role Pasien
-        };
+            default       => app(PasienDashboard::class)->index(),
+
+              };
     })->name('dashboard');
 
+    // Rute Detail Deteksi (PENTING: Nama harus persis sama dengan yang di Dashboard.tsx)
+    Route::get('/pasien/deteksi/{id}', [PasienDashboard::class, 'showDetail'])
+        ->name('pasien.deteksi.detail');
+
+        Route::get('/pasien/deteksi/print/{id}', [PasienDashboard::class, 'printPDF'])
+    ->name('pasien.deteksi.print');
         // --- AREA ADMIN ---
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
