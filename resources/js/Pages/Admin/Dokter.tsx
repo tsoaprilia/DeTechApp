@@ -43,13 +43,20 @@ export default function Dokter({ auth, dokters = [] }: { auth: any, dokters: any
         setShowDeleteModal(true);
     };
 
-    const executeDelete = () => {
-        if (selectedId) {
-            router.delete(route('admin.dokter.destroy', selectedId), {
-                onSuccess: () => setShowDeleteModal(false)
-            });
-        }
-    };
+
+const executeDelete = () => {
+    if (selectedId) {
+        // GANTI kunci menjadi 'dokter'
+        router.delete(route('admin.dokter.destroy', { dokter: selectedId }), {
+            onSuccess: () => {
+                setShowDeleteModal(false);
+                setSelectedId(null);
+            },
+            preserveState: false,
+            preserveScroll: true
+        });
+    }
+};
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();

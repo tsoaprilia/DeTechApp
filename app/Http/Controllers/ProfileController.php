@@ -14,18 +14,21 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Menampilkan halaman profil (HANYA SATU FUNGSI INI)
      */
     public function edit(Request $request): Response
     {
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'auth' => [
+                'user' => $request->user(),
+            ],
         ]);
     }
 
     /**
-     * Update the user's profile information.
+     * Update profil
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -41,7 +44,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Hapus akun
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -52,7 +55,6 @@ class ProfileController extends Controller
         $user = $request->user();
 
         Auth::logout();
-
         $user->delete();
 
         $request->session()->invalidate();

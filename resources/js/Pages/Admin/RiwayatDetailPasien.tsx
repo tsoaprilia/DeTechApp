@@ -3,13 +3,16 @@ import { Head, Link, router } from '@inertiajs/react';
 import Sidebar from '@/Components/Admin/Sidebar';
 import Header from '@/Components/Admin/Header';
 import { 
-    ArrowLeft, User, Calendar, FileText, CheckCircle, Clock, 
-    Activity, Hash, Eye, Trash2, MapPin, Phone, Mail, Baby, Heart, Stethoscope,
+    ArrowLeft, User, Calendar, CheckCircle, Clock, 
+    Hash, Eye, Trash2, MapPin, Phone, Mail, Baby, Heart, Stethoscope,
     Camera
 } from 'lucide-react';
 
 export default function RiwayatDetailPasien({ auth, patient }: any) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Konstanta untuk cek role dokter
+    const isDokter = auth.user.role === 'dokter';
 
     const handleDelete = (id: string) => {
         if (confirm('Apakah Anda yakin ingin menghapus data riwayat ini?')) {
@@ -35,7 +38,7 @@ export default function RiwayatDetailPasien({ auth, patient }: any) {
                         Kembali ke Data Pasien
                     </Link>
 
-                    {/* CARD PROFIL PASIEN ESTETIK */}
+                    {/* CARD PROFIL PASIEN */}
                     <section className="bg-white rounded-[50px] shadow-sm border border-[#C3E3EE] overflow-hidden">
                         <div className="bg-gradient-to-r from-[#053247] to-[#0a4661] p-10 flex flex-col md:flex-row items-center gap-10">
                             <div className="relative">
@@ -55,19 +58,19 @@ export default function RiwayatDetailPasien({ auth, patient }: any) {
                                     <h2 className="text-4xl font-black text-white tracking-tight">{patient.user.name}</h2>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <InfoSmall icon={<Hash />} label="NIK" value={patient.nik} />
-                                    <InfoSmall icon={<User />} label="Gender" value={patient.gender === 'male' ? 'Laki-laki' : 'Perempuan'} />
-                                    <InfoSmall icon={<MapPin />} label="Lahir" value={`${patient.birth_place}`} />
-                                    <InfoSmall icon={<Calendar />} label="Tgl Lahir" value={new Date(patient.birth_date).toLocaleDateString('id-ID')} />
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-left">
+                                    <InfoSmall icon={<Hash size={12}/>} label="NIK" value={patient.nik} />
+                                    <InfoSmall icon={<User size={12}/>} label="Gender" value={patient.gender === 'male' ? 'Laki-laki' : 'Perempuan'} />
+                                    <InfoSmall icon={<MapPin size={12}/>} label="Lahir" value={`${patient.birth_place}`} />
+                                    <InfoSmall icon={<Calendar size={12}/>} label="Tgl Lahir" value={new Date(patient.birth_date).toLocaleDateString('id-ID')} />
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8 bg-[#F8FDFF]">
-                            <ContactItem icon={<Phone className="text-emerald-500" />} label="No. Telepon" value={patient.user?.phone || '-'} />
-                            <ContactItem icon={<Mail className="text-blue-500" />} label="Alamat Email" value={patient.user?.email || '-'} />
-                            <ContactItem icon={<MapPin className="text-red-500" />} label="Alamat Tinggal" value={patient.address} isFull />
+                            <ContactItem icon={<Phone className="text-emerald-500" size={20}/>} label="No. Telepon" value={patient.user?.phone || '-'} />
+                            <ContactItem icon={<Mail className="text-blue-500" size={20}/>} label="Alamat Email" value={patient.user?.email || '-'} />
+                            <ContactItem icon={<MapPin className="text-red-500" size={20}/>} label="Alamat Tinggal" value={patient.address} isFull />
                         </div>
                     </section>
 
@@ -87,29 +90,26 @@ export default function RiwayatDetailPasien({ auth, patient }: any) {
                                             <th className="px-8 py-7 text-left text-xs font-black text-[#053247] uppercase tracking-widest">ID Deteksi</th>
                                             <th className="px-8 py-7 text-left text-xs font-black text-[#053247] uppercase tracking-widest">Tanggal</th>
                                             <th className="px-8 py-7 text-left text-xs font-black text-[#053247] uppercase tracking-widest">Dokter Pemeriksa</th>
-                                            <th className="px-8 py-7 text-center text-xs font-black text-[#053247] uppercase tracking-widest">Gigi Susu</th>
                                             <th className="px-8 py-7 text-center text-xs font-black text-[#053247] uppercase tracking-widest">Status</th>
                                             <th className="px-8 py-7 text-center text-xs font-black text-[#053247] uppercase tracking-widest">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#F1FBFF]">
                                         {patient.radiographs.map((item: any) => {
-                                            // Ambil nama dokter dari detections (mengambil dokter pertama yang memverifikasi)
-                                            
                                             const doctorName = item.dokter?.name || "Menunggu Verifikasi";
                                             const radiograferName = item.radiografer?.name || "Admin/Sistem";
                                             return (
                                                 <tr key={item.id_radiograph} className="hover:bg-[#F1FBFF]/60 transition-all group">
                                                     <td className="px-8 py-6">
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-3 text-left">
                                                             <div className="p-2 bg-[#F1FBFF] rounded-lg text-[#8BAFBF]"><Hash size={14} /></div>
                                                             <span className="font-black text-[#053247]">{item.id_radiograph}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-6 font-bold text-[#3B5862]">
+                                                    <td className="px-8 py-6 font-bold text-[#3B5862] text-left">
                                                         {new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                                                     </td>
-                                                    <td className="px-8 py-6">
+                                                    <td className="px-8 py-6 text-left">
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-2 text-sm font-black text-[#053247]">
                                                                 <Stethoscope size={14} className="text-blue-500" />
@@ -121,38 +121,50 @@ export default function RiwayatDetailPasien({ auth, patient }: any) {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-6 text-center">
-                                                        <span className="inline-flex items-center justify-center w-12 h-12 bg-[#053247] text-white rounded-2xl font-black text-xl shadow-lg shadow-[#053247]/20 transform group-hover:scale-110 transition-transform">
-                                                            {item.detections_count || 0}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-8 py-6 text-center">
+ 
+       <td className="px-8 py-6 text-center">
                                                         {item.status === 'verified' ? (
-                                                            <span className="inline-flex items-center gap-2 px-5 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-tighter border border-emerald-100 shadow-sm">
+                                                            <span className="inline-flex items-center gap-2 px-5 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase border border-emerald-100 shadow-sm">
                                                                 <CheckCircle size={12} /> Terverifikasi
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-2 px-5 py-2 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-tighter border border-amber-100 shadow-sm">
+                                                            <span className="inline-flex items-center gap-2 px-5 py-2 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase border border-amber-100 shadow-sm">
                                                                 <Clock size={12} /> Menunggu
                                                             </span>
                                                         )}
                                                     </td>
-                                                    <td className="px-8 py-6 text-center">
-                                                        <div className="flex justify-center gap-3">
-                                                            <Link 
-                                                                href={route('admin.deteksi.detail', item.id_radiograph)}
-                                                                className="p-4 bg-[#EBF8FE] text-[#053247] rounded-2xl border border-[#C3E3EE] hover:bg-[#053247] hover:text-white transition-all shadow-sm"
-                                                            >
-                                                                <Eye size={20} />
-                                                            </Link>
-                                                            <button 
-                                                                onClick={() => handleDelete(item.id_radiograph)}
-                                                                className="p-4 bg-[#FFF3F3] text-[#FF5B5B] rounded-2xl border border-[#FFDEDE] hover:bg-[#FF5B5B] hover:text-white transition-all shadow-sm"
-                                                            >
-                                                                <Trash2 size={20} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                   <td className="px-8 py-6 text-center">
+    <div className="flex justify-center gap-3">
+        {/* LOGIKA KHUSUS DOKTER DENGAN STATUS MENUNGGU */}
+        {isDokter && item.status === 'waiting' ? (
+            <Link 
+                href={route('admin.deteksi.detail', item.id_radiograph)}
+                className="px-6 py-2.5 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-all shadow-md flex items-center gap-2 font-black text-[11px] uppercase tracking-wider"
+            >
+                <CheckCircle size={16} />
+                Verifikasi Sekarang
+            </Link>
+        ) : (
+            /* TOMBOL LIHAT DETAIL BIASA (Untuk Admin atau jika status sudah Verified) */
+            <Link 
+                href={route('admin.deteksi.detail', item.id_radiograph)}
+                className="p-4 bg-[#EBF8FE] text-[#053247] rounded-2xl border border-[#C3E3EE] hover:bg-[#053247] hover:text-white transition-all shadow-sm"
+            >
+                <Eye size={20} />
+            </Link>
+        )}
+        
+        {/* LOGIKA SEMBUNYIKAN TOMBOL HAPUS UNTUK DOKTER */}
+        {!isDokter && (
+            <button 
+                onClick={() => handleDelete(item.id_radiograph)}
+                className="p-4 bg-[#FFF3F3] text-[#FF5B5B] rounded-2xl border border-[#FFDEDE] hover:bg-[#FF5B5B] hover:text-white transition-all shadow-sm"
+            >
+                <Trash2 size={20} />
+            </button>
+        )}
+    </div>
+</td>
                                                 </tr>
                                             );
                                         })}
@@ -169,7 +181,7 @@ export default function RiwayatDetailPasien({ auth, patient }: any) {
 
 function InfoSmall({ icon, label, value }: any) {
     return (
-        <div className="space-y-1">
+        <div className="space-y-1 text-left">
             <p className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
                 {icon} {label}
             </p>
@@ -180,7 +192,7 @@ function InfoSmall({ icon, label, value }: any) {
 
 function ContactItem({ icon, label, value, isFull = false }: any) {
     return (
-        <div className={`flex items-start gap-4 ${isFull ? 'md:col-span-1' : ''}`}>
+        <div className={`flex items-start gap-4 text-left ${isFull ? 'md:col-span-1' : ''}`}>
             <div className="p-3 bg-white rounded-2xl shadow-sm border border-[#C3E3EE]">
                 {icon}
             </div>

@@ -43,13 +43,19 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
         setShowDeleteModal(true);
     };
 
-    const executeDelete = () => {
-        if (selectedId) {
-            router.delete(route('admin.radiografer.destroy', selectedId), {
-                onSuccess: () => setShowDeleteModal(false)
-            });
-        }
-    };
+   const executeDelete = () => {
+    if (selectedId) {
+        // GANTI kunci 'id' menjadi 'radiografer' sesuai standar Resource Controller
+        router.delete(route('admin.radiografer.destroy', { radiografer: selectedId }), {
+            onSuccess: () => {
+                setShowDeleteModal(false);
+                setSelectedId(null);
+            },
+            preserveState: false, // Memaksa refresh data
+            preserveScroll: true
+        });
+    }
+};
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();

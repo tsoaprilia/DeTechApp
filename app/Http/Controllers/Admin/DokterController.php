@@ -79,10 +79,13 @@ class DokterController extends Controller
     /**
      * Menghapus data dokter.
      */
-    public function destroy($id)
-    {
-        User::findOrFail($id)->delete();
-        return redirect()->route('admin.dokter.index')
-            ->with('message', 'Data Dokter berhasil dihapus');
-    }
+  public function destroy($id)
+{
+    $user = User::findOrFail($id);
+    $user->delete();
+
+    // Pastikan menggunakan rute index
+    return redirect()->route('admin.dokter.index')
+                     ->with('message', 'Data Dokter berhasil dihapus');
+}
 }

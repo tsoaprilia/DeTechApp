@@ -168,14 +168,14 @@ export default function Login({
                             Masuk Sekarang
                         </button>
 
-                        <div className="text-center pt-4">
+                        {/* <div className="text-center pt-4">
                             <p className="text-sm text-[#053247]/70 font-medium">
                                 Belum punya akun? {' '}
                                 <Link href={route('register')} className="text-[#8BAFBF] font-bold hover:underline">
                                     [Daftar disini]
                                 </Link>
                             </p>
-                        </div>
+                        </div> */}
                     </form>
                 </div>
             </div>

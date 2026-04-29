@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Menu, ChevronDown, User, ShieldCheck, Settings, GitFork, Users, CameraIcon } from 'lucide-react';
+import { Menu, ChevronDown, User, ShieldCheck, Settings, GitFork, Users, CameraIcon,Stethoscope, RefreshCcw} from 'lucide-react';
 import { useState, useMemo } from 'react';
 
 export default function Header({ auth, onMenuClick }: { auth: any, onMenuClick: () => void }) {
@@ -7,29 +7,48 @@ export default function Header({ auth, onMenuClick }: { auth: any, onMenuClick: 
     const { url } = usePage();
 
     // PERBAIKAN: Logika Judul & Ikon Dinamis menggunakan Wildcard
-    const pageConfig = useMemo(() => {
-        // Dashboard
-        if (route().current('admin.dashboard')) {
-            return { title: 'Dashboard', icon: <ShieldCheck size={28} strokeWidth={2.5} /> };
+   // Header.tsx - Bagian pageConfig
+const pageConfig = useMemo(() => {
+    // 1. DASHBOARD (Deteksi semua jenis dashboard role)
+    if (route().current('*.dashboard')) {
+        return { title: 'Dashboard Overview', icon: <ShieldCheck size={28} strokeWidth={2.5} /> };
+    }
+    
+    // 2. DETEKSI & DETAIL (Sharing Admin/Rad/Dokter)
+    if (route().current('admin.deteksi.*') || route().current('admin.deteksi')) {
+        // Jika sedang di halaman detail/verifikasi
+        if (route().current('admin.deteksi.detail')) {
+            return { title: 'Verifikasi Deteksi', icon: <GitFork size={28} strokeWidth={2.5} /> };
         }
-        
-        // Deteksi Gigi Susu (Termasuk halaman detail .show dan .analyze)
-        if (route().current('admin.deteksi') || route().current('admin.deteksi.*')) {
-            return { title: 'Deteksi Gigi Susu', icon: <GitFork size={28} strokeWidth={2.5} /> };
-        }
+        return { title: 'Deteksi Gigi Susu', icon: <GitFork size={28} strokeWidth={2.5} /> };
+    }
 
-        // Contoh Data Pasien jika nanti ada
-        if (route().current('admin.radiografer.*')) {
-            return { title: 'Data Radiografer', icon: <CameraIcon size={28} strokeWidth={2.5} /> };
-        }
-        
-        // Contoh Data Pasien jika nanti ada
-        if (route().current('admin.pasien.*')) {
-            return { title: 'Data Pasien', icon: <Users size={28} strokeWidth={2.5} /> };
-        }
-        
-        return { title: 'Dashboard', icon: <ShieldCheck size={28} strokeWidth={2.5} /> };
-    }, [url]);
+    // 3. TUGAS VERIFIKASI (Khusus Dokter)
+    if (route().current('dokter.verifikasi.index')) {
+        return { title: 'Tugas Verifikasi', icon: <Stethoscope size={28} strokeWidth={2.5} /> };
+    }
+
+    // 4. DATA PASIEN & RADIOGRAFER
+    if (route().current('admin.pasien.*') || route().current('admin.pasien.index')) {
+        return { title: 'Data Pasien', icon: <Users size={28} strokeWidth={2.5} /> };
+    }
+    
+    if (route().current('admin.radiografer.*')) {
+        return { title: 'Data Radiografer', icon: <CameraIcon size={28} strokeWidth={2.5} /> };
+    }
+
+    if (route().current('admin.dokter.*')) {
+        return { title: 'Data Dokter', icon: <User size={28} strokeWidth={2.5} /> };
+    }
+
+    // 5. RIWAYAT
+    if (route().current('admin.riwayat')) {
+        return { title: 'Riwayat Deteksi', icon: <RefreshCcw size={28} strokeWidth={2.5} /> };
+    }
+    
+    // Default jika tidak ketemu
+    return { title: 'DeTech System', icon: <ShieldCheck size={28} strokeWidth={2.5} /> };
+}, [url]);
 
     const getInitials = (name: string) => {
         return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
@@ -83,10 +102,10 @@ export default function Header({ auth, onMenuClick }: { auth: any, onMenuClick: 
                             <div className="p-2 bg-blue-50 rounded-xl text-[#8BAFBF] group-hover:bg-white transition-colors shadow-sm"><User size={18} /></div>
                             <span className="font-bold text-[#053247] text-sm">Detail Profil</span>
                         </Link>
-                        <Link href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-[#F1FBFF] rounded-2xl transition-colors group">
+                        {/* <Link href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-[#F1FBFF] rounded-2xl transition-colors group">
                             <div className="p-2 bg-gray-50 rounded-xl text-gray-400 group-hover:bg-white transition-colors shadow-sm"><Settings size={18} /></div>
                             <span className="font-bold text-[#053247] text-sm">Pengaturan</span>
-                        </Link>
+                        </Link> */}
                     </div>
                 )}
             </div>

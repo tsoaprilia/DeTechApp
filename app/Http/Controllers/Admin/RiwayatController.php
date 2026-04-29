@@ -9,28 +9,30 @@ use Inertia\Inertia;
 
 class RiwayatController extends Controller
 {
-    public function index()
-    {
-        // Ambil data radiografi dengan relasi pasien dan hitung jumlah deteksi gigi
-        $radiographs = Radiograph::with(['patient.user'])
-            ->withCount('detections')
-            ->orderBy('created_at', 'desc')
-            ->get();
+    // App/Http/Controllers/Admin/RiwayatController.php
 
-        return Inertia::render('Admin/RiwayatDeteksi', [
-            'radiographs' => $radiographs
-        ]);
-    }
+public function index()
+{
+    // Ambil data radiografi dan hitung jumlah deteksi gigi yang valid
+    $radiographs = Radiograph::with(['patient.user', 'detections']) // Tambahkan 'detections'
+        ->withCount('detections') 
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-    public function destroy($id)
-    {
-        $radiograph = Radiograph::findOrFail($id);
-        
-        // Hapus file gambar di storage jika perlu
-        // Storage::disk('public')->delete($radiograph->image);
-        
-        $radiograph->delete();
+    return Inertia::render('Admin/RiwayatDeteksi', [
+        'radiographs' => $radiographs
+    ]);
+}
 
-        return redirect()->back()->with('success', 'Riwayat berhasil dihapus.');
-    }
+   public function destroy($id) 
+{
+    // Cari data berdasarkan ID string RAD-XXXX
+    $radiograph = Radiograph::where('id_radiograph', $id)->firstOrFail();
+    
+    // Eksekusi hapus
+    $radiograph->delete();
+
+    // JANGAN PAKAI back(), gunakan route() agar arah redirect JELAS dan tidak 404
+    return redirect()->route('admin.riwayat')->with('success', 'Riwayat berhasil dihapus.');
+}
 }

@@ -120,9 +120,18 @@ public function riwayat($nik)
     }
 
     public function destroy($nik)
-    {
-        $patient = Patient::where('nik', $nik)->firstOrFail();
-        User::find($patient->user_id)->delete();
-        return redirect()->route('admin.pasien.index')->with('message', 'Data pasien dihapus');
-    }
+{
+    // Gunakan findOrFail jika sudah setting primaryKey di model, 
+    // atau tetap gunakan where() untuk keamanan ekstra
+    $patient = Patient::where('nik', $nik)->firstOrFail();
+    
+    $userId = $patient->user_id;
+
+    DB::transaction(function () use ($patient, $userId) {
+        $patient->delete(); // Hapus data pasien
+        User::find($userId)->delete(); // Hapus user terkait
+    });
+
+    return redirect()->route('admin.pasien.index')->with('message', 'Data pasien berhasil dihapus');
+}
 }

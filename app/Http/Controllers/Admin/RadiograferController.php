@@ -91,11 +91,12 @@ class RadiograferController extends Controller
      * Menghapus data radiografer
      */
     public function destroy($id)
-    {
-        $user = User::findOrFail($id);
-        $user->delete();
+{
+    $user = User::findOrFail($id);
+    $user->delete();
 
-        return redirect()->route('admin.radiografer.index')
-            ->with('message', 'Data Radiografer berhasil dihapus');
-    }
+    // Pastikan menggunakan rute index
+    return redirect()->route('admin.radiografer.index')
+                     ->with('message', 'Data Radiografer berhasil dihapus');
+}
 }

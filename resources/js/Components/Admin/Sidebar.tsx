@@ -22,49 +22,51 @@ export default function Sidebar({ isOpen, setIsOpen, auth }: Props) {
 
     // Daftar semua menu yang mungkin ada
     const allMenuItems = [
-        { 
-            name: 'Dashboard', 
-            icon: <LayoutGrid size={20} fill="currentColor" />, 
-            link: role === 'admin' ? 'admin.dashboard' : (role === 'dokter' ? 'dokter.dashboard' : 'radiografer.dashboard'),
-            roles: ['admin', 'dokter', 'radiografer'] 
-        },
-        { 
-            name: 'Deteksi Gigi Susu', 
-            icon: <GitFork size={20} />, 
-            link: 'admin.deteksi', 
-            roles: ['admin', 'radiografer'] 
-        },
-        { 
+       { 
+        name: 'Dashboard', 
+        icon: <LayoutGrid size={20} fill="currentColor" />, 
+        // Mengarahkan ke dashboard masing-masing role
+        link: role === 'admin' ? 'admin.dashboard' : (role === 'dokter' ? 'dokter.dashboard' : 'radiografer.dashboard'),
+        roles: ['admin', 'dokter', 'radiografer'] 
+    },
+    { 
+        name: 'Deteksi Gigi Susu', 
+        icon: <GitFork size={20} />, 
+        // Admin ke rute admin, Radiografer ke rute admin juga (karena kamu cuma buat satu controller deteksi di folder Admin)
+        link: 'admin.deteksi', 
+        roles: ['admin', 'radiografer'] 
+    },
+      { 
             name: 'Radiografer', 
             icon: <Camera size={20} fill="currentColor" />, 
             link: 'admin.radiografer.index', 
             roles: ['admin'] 
         },
-        { 
+         { 
             name: 'Data Dokter', 
             icon: <User size={20} fill="currentColor" />, 
             link: 'admin.dokter.index', 
             roles: ['admin'] 
         },
-        { 
-            name: 'Data Pasien', 
-            icon: <Users size={20} fill="currentColor" />, 
-            link: 'admin.pasien.index', 
-            roles: ['admin', 'dokter'] 
-        },
-        { 
-            name: 'Riwayat Deteksi', 
-            icon: <RefreshCcw size={20} />, 
-            link: 'admin.riwayat', 
-            roles: ['admin'] 
-        },
+    { 
+        name: 'Data Pasien', 
+        icon: <Users size={20} fill="currentColor" />, 
+        link: 'admin.pasien.index', 
+        roles: ['admin', 'dokter', 'radiografer'] 
+    },
+    { 
+        name: 'Riwayat Deteksi', 
+        icon: <RefreshCcw size={20} />, 
+        link: 'admin.riwayat', 
+        roles: ['admin', 'dokter', 'radiografer'] 
+    },
         // Menu Khusus Dokter untuk melihat riwayat verifikasi mereka sendiri
         {
-            name: 'Tugas Verifikasi',
-            icon: <Stethoscope size={20} />,
-            link: 'admin.pasien.index', // Sesuaikan jika ada rute khusus verifikasi dokter
-            roles: ['dokter']
-        }
+    name: 'Tugas Verifikasi',
+    icon: <Stethoscope size={20} />,
+    link: 'dokter.verifikasi.index', // GANTI JADI INI
+    roles: ['dokter']
+}
     ];
 
     // Filter menu berdasarkan role user yang sedang login

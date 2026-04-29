@@ -77,8 +77,7 @@ class DetectionController extends Controller
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('radiographs', 'public');
             
-            $id_rad = 'RAD-' . date('dmy') . '-' . sprintf('%03d', Radiograph::count() + 1);
-
+$id_rad = 'RAD-' . date('dmyHis') . '-' . sprintf('%03d', auth()->id());
             // 2. Masukkan ID Radiografer langsung saat create Radiograph
             Radiograph::create([
                 'id_radiograph' => $id_rad,

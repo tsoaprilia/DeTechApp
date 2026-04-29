@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Patient;
 use App\Models\Radiograph;
 use Inertia\Inertia;
-use Barryvdh\DomPDF\Facade\Pdf; // Import di bagian atas
-
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DashboardController extends Controller
 {
@@ -16,12 +15,19 @@ class DashboardController extends Controller
         $user = auth()->user();
         $patient = Patient::where('user_id', $user->id)->first();
 
+        // Data Dasar yang harus ada di setiap render
+        $sharedData = [
+            'auth' => [
+                'user' => $user
+            ]
+        ];
+
         if (!$patient) {
-            return Inertia::render('Dashboard', [
+            return Inertia::render('Dashboard', array_merge($sharedData, [
                 'stats' => ['count_pemeriksaan' => 0],
                 'radiographs' => [],
                 'patient' => null
-            ]);
+            ]));
         }
 
         $radiographs = Radiograph::with(['dokter'])
@@ -30,28 +36,28 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
-        return Inertia::render('Dashboard', [
+        return Inertia::render('Dashboard', array_merge($sharedData, [
             'patient' => $patient,
             'radiographs' => $radiographs,
             'stats' => ['count_pemeriksaan' => $radiographs->count()]
-        ]);
+        ]));
     }
 
-    // FUNGSI BARU UNTUK DETAIL PASIEN
     public function showDetail($id)
     {
-        // Ambil data rontgen + relasi pendukungnya
         $radiograph = Radiograph::with(['detections', 'dokter', 'patient.user', 'radiografer'])
             ->where('id_radiograph', $id)
             ->firstOrFail();
 
-        // Kirim ke folder Pasien/DetailDeteksi
         return Inertia::render('Pasien/DetailDeteksi', [
+            'auth' => [
+                'user' => auth()->user() // WAJIB ADA JUGA DI SINI
+            ],
             'radiograph' => $radiograph
         ]);
     }
 
-public function printPDF($id)
+    public function printPDF($id)
 {
     $radiograph = Radiograph::with(['detections', 'dokter', 'patient.user'])
         ->where('id_radiograph', $id)

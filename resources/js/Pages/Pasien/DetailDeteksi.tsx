@@ -1,5 +1,4 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Header from '@/Components/Pasien/Header';
+import HeaderPasien from '@/Components/Pasien/Header'; // Menggunakan Header khusus Pasien
 import { Head, Link } from '@inertiajs/react';
 import { 
     ArrowLeft, Fingerprint, Calendar, Home, MapPin, Hash, 
@@ -17,19 +16,21 @@ export default function DetailDeteksi({ auth, radiograph, patient }: any) {
         ? `https://ui-avatars.com/api/?name=${auth.user.name}&background=fce4ec&color=d81b60`
         : `https://ui-avatars.com/api/?name=${auth.user.name}&background=e3f2fd&color=1976d2`;
 
-        const handleDownloadPDF = () => {
-    // window.open akan membuka tab baru dan otomatis mendownload filenya
-    window.open(route('pasien.deteksi.print', radiograph.id_radiograph), '_blank');
-};
+    const handleDownloadPDF = () => {
+        window.open(route('pasien.deteksi.print', radiograph.id_radiograph), '_blank');
+    };
+
     return (
-        <AuthenticatedLayout>
+        <div className="bg-[#F1FBFF] min-h-screen font-['DM_Sans'] text-left overflow-x-hidden">
             <Head title={`Detail - ${radiograph.id_radiograph}`} />
-            <Header user={auth.user} profileImage={profileImg} />
             
-            <div className="bg-[#F1FBFF] min-h-screen pb-20 pt-4 md:pt-8 font-['DM_Sans']">
+            {/* HEADER KHUSUS PASIEN */}
+            <HeaderPasien user={auth.user} profileImage={profileImg} />
+            
+            <div className="pb-20 pt-4 md:pt-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
                     
-                    {/* TOP BAR - Stacked on Mobile */}
+                    {/* TOP BAR */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                         <Link href={route('dashboard')} className="flex items-center gap-2 text-[#8BAFBF] font-bold hover:text-[#053247] transition-all group">
                             <div className="p-2 bg-white rounded-xl shadow-sm group-hover:bg-[#053247] group-hover:text-white transition-all">
@@ -40,11 +41,11 @@ export default function DetailDeteksi({ auth, radiograph, patient }: any) {
                         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                             {radiograph.status === 'verified' && (
                                 <button 
-    onClick={handleDownloadPDF}
-    className="flex items-center gap-2 px-5 py-2 bg-[#053247] text-white rounded-full text-[11px] font-black uppercase hover:bg-[#406474] transition-all shadow-lg"
->
-    <Download size={14} /> Download Hasil PDF
-</button>
+                                    onClick={handleDownloadPDF}
+                                    className="flex items-center gap-2 px-5 py-2 bg-[#053247] text-white rounded-full text-[11px] font-black uppercase hover:bg-[#406474] transition-all shadow-lg"
+                                >
+                                    <Download size={14} /> Download Hasil PDF
+                                </button>
                             )}
                             <div className={`flex-1 sm:flex-none text-center px-4 py-2 rounded-full text-[10px] font-black uppercase border ${
                                 radiograph.status === 'verified' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
@@ -54,7 +55,7 @@ export default function DetailDeteksi({ auth, radiograph, patient }: any) {
                         </div>
                     </div>
 
-                    {/* SECTION 1: INFO & LOGISTIK - Column on Tablet/Mobile */}
+                    {/* SECTION 1: INFO & LOGISTIK */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                         <section className="lg:col-span-2 bg-white p-6 md:p-8 rounded-[30px] md:rounded-[40px] shadow-sm border border-[#C3E3EE] flex flex-col md:flex-row gap-6 md:gap-8 items-center">
                             <div className="w-20 h-20 md:w-28 md:h-28 bg-[#053247] rounded-2xl md:rounded-[30px] flex items-center justify-center text-3xl md:text-4xl font-black text-white shadow-xl shrink-0">
@@ -88,18 +89,17 @@ export default function DetailDeteksi({ auth, radiograph, patient }: any) {
 
                     {radiograph.status === 'verified' ? (
                         <>
-                            {/* SECTION 4: HASIL DETEKSI ANATOMI */}
                             <div className="space-y-4 mb-10">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-2">
                                     <h3 className="text-lg md:text-xl font-black text-[#053247] flex items-center gap-3">
                                         <Info className="text-emerald-500" size={20} /> Anatomi Gigi
                                     </h3>
-                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-[9px] font-bold uppercase tracking-widest">
+                                    <div className="flex gap-4 text-[9px] font-bold uppercase tracking-widest">
                                         <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#C3E3EE] rounded-full border border-[#053247]"></div> Gigi Susu</div>
                                         <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-100 rounded-full border border-dashed border-gray-400"></div> Gigi Hilang</div>
                                     </div>
                                 </div>
-                                <div className="bg-white p-6 md:p-10 rounded-[30px] md:rounded-[40px] border border-[#C3E3EE] space-y-6 md:space-y-8 text-center shadow-sm overflow-x-auto">
+                                <div className="bg-white p-6 md:p-10 rounded-[30px] md:rounded-[40px] border border-[#C3E3EE] space-y-8 text-center shadow-sm overflow-x-auto">
                                     <div className="min-w-[500px] md:min-w-0 space-y-4">
                                         <div className="flex justify-center flex-wrap gap-2">
                                             {TOP_TEETH.map(fdi => <TeethIcon key={fdi} fdi={fdi} active={radiograph.detections?.some((d:any) => parseInt(d.no_fdi) === fdi)} />)}
@@ -112,7 +112,6 @@ export default function DetailDeteksi({ auth, radiograph, patient }: any) {
                                 </div>
                             </div>
 
-                            {/* SECTION 5: GALERI CROP - Responsive Grid 2 to 10 */}
                             <div className="space-y-4">
                                 <h3 className="text-lg md:text-xl font-black text-[#053247] flex items-center gap-3 px-2">
                                     <RefreshCcw className="text-[#8BAFBF]" size={20} /> Galeri Analisis
@@ -122,16 +121,12 @@ export default function DetailDeteksi({ auth, radiograph, patient }: any) {
                                         {[...TOP_TEETH, ...BOTTOM_TEETH].map((fdi) => {
                                             const det = radiograph.detections?.find((d: any) => parseInt(d.no_fdi) === fdi);
                                             return (
-                                                <div key={fdi} className="space-y-2 text-center group">
-                                                    <div className={`aspect-[3/4] rounded-xl md:rounded-2xl overflow-hidden border-2 flex items-center justify-center bg-white transition-all ${
-                                                        det ? 'border-emerald-200 shadow-md' : 'border-dashed border-gray-300 opacity-80 bg-gray-50'
-                                                    }`}>
+                                                <div key={fdi} className="space-y-2 text-center">
+                                                    <div className={`aspect-[3/4] rounded-xl overflow-hidden border-2 flex items-center justify-center bg-white ${det ? 'border-emerald-200 shadow-md' : 'border-dashed border-gray-300 opacity-80'}`}>
                                                         {det ? (
                                                             <img src={`/storage/radiographs/crop_${fdi}_${base}.jpg`} className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <div className="text-center p-1">
-                                                                <p className="text-[6px] md:text-[7px] font-black text-gray-500 uppercase leading-tight italic">Gigi Hilang</p>
-                                                            </div>
+                                                            <p className="text-[7px] font-black text-gray-500 uppercase italic">Gigi Hilang</p>
                                                         )}
                                                     </div>
                                                     <p className="text-[9px] md:text-[10px] font-black text-[#053247]">Gigi #{fdi}</p>
@@ -144,30 +139,26 @@ export default function DetailDeteksi({ auth, radiograph, patient }: any) {
                             </div>
                         </>
                     ) : (
-                        <div className="p-8 md:p-12 bg-amber-50 rounded-[30px] md:rounded-[40px] border-2 border-dashed border-amber-200 text-center space-y-4 animate-pulse">
-                            <div className="bg-white w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto shadow-sm text-amber-500">
-                                <RefreshCcw className="animate-spin" size={24} />
-                            </div>
-                            <h4 className="text-lg md:text-xl font-black text-amber-800 tracking-tight">Hasil Masih Diproses</h4>
-                            <p className="text-amber-700/70 text-xs md:text-sm max-w-md mx-auto">
-                                Hasil sedang dalam tahap verifikasi Dokter. Silakan cek kembali nanti.
-                            </p>
+                        <div className="p-12 bg-amber-50 rounded-[40px] border-2 border-dashed border-amber-200 text-center space-y-4">
+                            <RefreshCcw className="animate-spin mx-auto text-amber-500" size={32} />
+                            <h4 className="text-xl font-black text-amber-800">Hasil Masih Diproses</h4>
+                            <p className="text-amber-700/70 text-sm">Sedang dalam tahap verifikasi Dokter. Silakan cek kembali nanti.</p>
                         </div>
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </div>
     );
 }
 
-// UI HELPERS - Mobile Adjusted
+// UI HELPERS
 function InfoItem({ icon, label, value }: any) {
     return (
-        <div className="flex items-center gap-3 text-[#3B5862] bg-[#F1FBFF] px-3 md:px-4 py-2 md:py-2.5 rounded-xl md:rounded-2xl border border-[#deeff6]">
+        <div className="flex items-center gap-3 text-[#3B5862] bg-[#F1FBFF] px-3 md:px-4 py-2 rounded-xl border border-[#deeff6]">
             <div className="text-[#8BAFBF] shrink-0">{icon}</div>
             <div className="text-left overflow-hidden">
-                <p className="text-[7px] md:text-[8px] font-black uppercase text-[#8BAFBF] leading-none mb-1">{label}</p>
-                <p className="text-[10px] md:text-[11px] font-bold leading-tight truncate">{value}</p>
+                <p className="text-[7px] md:text-[8px] font-black uppercase text-[#8BAFBF] mb-1">{label}</p>
+                <p className="text-[10px] md:text-[11px] font-bold truncate">{value}</p>
             </div>
         </div>
     );
@@ -176,10 +167,10 @@ function InfoItem({ icon, label, value }: any) {
 function LogistikItem({ icon, label, value, color }: any) {
     return (
         <div className="flex items-center gap-3 md:gap-4">
-            <div className={`p-2 md:p-2.5 bg-white/10 rounded-lg md:rounded-xl ${color} shrink-0`}>{icon}</div>
+            <div className={`p-2 bg-white/10 rounded-lg ${color} shrink-0`}>{icon}</div>
             <div className="text-left overflow-hidden">
-                <p className="text-[8px] md:text-[9px] font-bold text-white/50 uppercase leading-none mb-1">{label}</p>
-                <p className="font-black text-xs md:text-sm leading-tight truncate">{value}</p>
+                <p className="text-[8px] md:text-[9px] font-bold text-white/50 uppercase mb-1">{label}</p>
+                <p className="font-black text-xs md:text-sm truncate">{value}</p>
             </div>
         </div>
     );

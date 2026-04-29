@@ -4,7 +4,7 @@ import Sidebar from '@/Components/Admin/Sidebar';
 import Header from '@/Components/Admin/Header';
 import { 
     User, ArrowLeft, RefreshCcw, MapPin, Hash, Fingerprint, Phone, Home, Mail,
-    Calendar, CheckCircle, Save, Info, Camera, Stethoscope 
+    Calendar, CheckCircle, Save, Info, Camera, Stethoscope, Download
 } from 'lucide-react';
 
 const TOP_TEETH = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
@@ -38,6 +38,11 @@ export default function DetailDeteksi({ auth, radiograph,temp_results, temp_imag
 
     const radiograferName = radiograph.radiografer?.name || 'Admin DeTech';
     const dokterName = radiograph.dokter?.name || (radiograph.status === 'verified' ? 'Admin DeTech' : 'Belum Diverifikasi');
+    // Tambahkan di dalam fungsi utama DetailDeteksi sebelum return
+const handleDownloadPDF = () => {
+    // Mengarahkan ke rute cetak yang sudah ada
+    window.open(route('pasien.deteksi.print', radiograph.id_radiograph), '_blank');
+};
 
  useEffect(() => {
     // 1. Reset data lama dulu supaya nggak nyampur sama hasil baru
@@ -83,7 +88,7 @@ export default function DetailDeteksi({ auth, radiograph,temp_results, temp_imag
     const submitFinal = () => {
         const finalData = curatedData.filter(d => d.is_selected);
         if (finalData.length === 0) return alert("Pilih minimal satu gigi.");
-        const targetRoute = auth.user.role === 'admin' ? route('admin.deteksi.finalize', radiograph.id_radiograph) : route('dokter.deteksi.finalize', radiograph.id_radiograph);
+const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
         router.post(targetRoute, { selected_detections: finalData }, { preserveScroll: true });
     };
 
@@ -118,16 +123,29 @@ export default function DetailDeteksi({ auth, radiograph,temp_results, temp_imag
                 <div className="px-8 lg:px-12"><Header auth={auth} onMenuClick={() => setSidebarOpen(true)} /></div>
                 
                 <div className="px-8 lg:px-12 pt-4 pb-12 space-y-6">
-                    {/* TOP BAR */}
-                    <div className="flex items-center justify-between">
-                        <Link href={route('admin.deteksi')} className="flex items-center gap-2 text-[#8BAFBF] font-bold hover:text-[#053247] transition-all group">
-                            <div className="p-2 bg-white rounded-xl shadow-sm group-hover:bg-[#053247] group-hover:text-white transition-all"><ArrowLeft size={18} /></div>
-                            Kembali
-                        </Link>
-                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border ${radiograph.status === 'verified' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                            STATUS: {radiograph.status}
-                        </div>
-                    </div>
+                   {/* TOP BAR */}
+<div className="flex items-center justify-between">
+    <Link href={route('admin.deteksi')} className="flex items-center gap-2 text-[#8BAFBF] font-bold hover:text-[#053247] transition-all group">
+        <div className="p-2 bg-white rounded-xl shadow-sm group-hover:bg-[#053247] group-hover:text-white transition-all"><ArrowLeft size={18} /></div>
+        Kembali
+    </Link>
+    
+    <div className="flex items-center gap-3">
+        {/* TOMBOL DOWNLOAD PDF UNTUK ADMIN/DOKTER/RADIOGRAFER */}
+        {radiograph.status === 'verified' && (
+            <button 
+                onClick={handleDownloadPDF}
+                className="flex items-center gap-2 px-6 py-2 bg-[#053247] text-white rounded-full text-[11px] font-black uppercase hover:bg-[#1a4a5f] transition-all shadow-lg"
+            >
+                <Download size={14} /> Download PDF
+            </button>
+        )}
+
+        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border ${radiograph.status === 'verified' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+            STATUS: {radiograph.status}
+        </div>
+    </div>
+</div>
 
                     {/* SECTION 1: INFORMASI PASIEN LENGKAP & PANEL LOGISTIK */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
@@ -189,11 +207,11 @@ export default function DetailDeteksi({ auth, radiograph,temp_results, temp_imag
                         </section>
                     </div>
 
-                   {/* SECTION 2: PREVIEW GAMBAR */}
+                {/* SECTION 2: PREVIEW GAMBAR */}
 <section className="bg-white p-10 rounded-[40px] shadow-sm border border-[#C3E3EE] space-y-8">
     <div className={`grid gap-6 ${curatedData.length > 0 && radiograph.status === 'waiting' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
         
-        {/* GAMBAR UTAMA: Selalu Tampil */}
+        {/* GAMBAR UTAMA: Selalu Tampil (Admin, Dokter, Radiografer bisa lihat) */}
         <div className="space-y-4 text-center">
             {curatedData.length > 0 && radiograph.status === 'waiting' && (
                 <p className="text-xs font-black text-[#8BAFBF] uppercase tracking-widest">Original Image</p>
@@ -207,31 +225,34 @@ export default function DetailDeteksi({ auth, radiograph,temp_results, temp_imag
             </div>
         </div>
 
-       {/* GAMBAR HASIL AI (BOUNDING BOX) */}
-{radiograph.status === 'waiting' && curatedData.length > 0 && (
-    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-700">
-        <p className="text-xs font-black text-emerald-500 uppercase tracking-widest text-center">
-            AI Detection (YOLOv11) - Bounding Box
-        </p>
-        <div className="rounded-[30px] overflow-hidden bg-black flex justify-center border-4 border-emerald-100 shadow-inner">
-           <img 
-    key={displayImage}
-    src={`/storage/${displayImage}`} 
-    className="max-h-[450px] object-contain w-full" 
-    alt="Hasil Deteksi AI"
-/>
-        </div>
-    </div>
-)}
+        {/* GAMBAR HASIL AI: Hanya muncul jika sudah dideteksi dan BUKAN radiografer */}
+        {auth.user.role !== 'radiografer' && radiograph.status === 'waiting' && curatedData.length > 0 && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-700">
+                <p className="text-xs font-black text-emerald-500 uppercase tracking-widest text-center">
+                    AI Detection (YOLOv11) - Bounding Box
+                </p>
+                <div className="rounded-[30px] overflow-hidden bg-black flex justify-center border-4 border-emerald-100 shadow-inner">
+                    <img 
+                        key={displayImage}
+                        src={`/storage/${displayImage}`} 
+                        className="max-h-[450px] object-contain w-full" 
+                        alt="Hasil Deteksi AI"
+                    />
+                </div>
+            </div>
+        )}
     </div>
 
-    {/* Tombol Deteksi: Hanya tampil jika belum dideteksi */}
-    {radiograph.status === 'waiting' && curatedData.length === 0 && (
-        <button onClick={handleStartDetection} disabled={isProcessing || processing} className="w-full py-5 bg-[#425F6A] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg hover:bg-[#344d57] transition-all">
+    {/* TOMBOL DETEKSI: Hanya muncul untuk Admin & Dokter */}
+    {auth.user.role !== 'radiografer' && radiograph.status === 'waiting' && curatedData.length === 0 && (
+        <button 
+            onClick={handleStartDetection} 
+            disabled={isProcessing || processing} 
+            className="w-full py-5 bg-[#425F6A] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg hover:bg-[#344d57] transition-all"
+        >
             {isProcessing ? <><RefreshCcw className="animate-spin" /> Memproses {progress}%</> : 'Mulai Deteksi YOLOv11'}
         </button>
     )}
-
                        {/* SECTION 3: VERIFIKASI INTERAKTIF (ODONTOGRAM STYLE) */}
 {curatedData.length > 0 && radiograph.status === 'waiting' && (
     <div className="p-8 bg-white rounded-[40px] border-2 border-[#C3E3EE] shadow-sm animate-in fade-in zoom-in-95 duration-500">

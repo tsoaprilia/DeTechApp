@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Head, useForm, router, Link } from '@inertiajs/react';
 import Sidebar from '@/Components/Admin/Sidebar';
 import Header from '@/Components/Admin/Header';
-import { User, Search, Edit2, Trash2, Plus, Phone, Mail, X, Save, Lock, Hash, Users, AlertCircle, MapPin, Calendar, RefreshCcw } from 'lucide-react';
+import { User, Search, Edit2, Trash2, Plus, Phone, Mail, X, Save, Lock, Hash, Users, AlertCircle, MapPin, Calendar, RefreshCcw, LucideEye } from 'lucide-react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -14,20 +14,28 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
     const [editData, setEditData] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Menggunakan form helper dari Inertia dengan namespace 'form'
+    // Shortcut untuk cek role
+    const isDokter = auth.user.role === 'dokter';
+
     const form = useForm({
-        nik: '', name: '', email: '', phone: '', birth_place: '', 
-        birth_date: null as Date | null, address: '', gender: 'male', password: ''
+        nik: '', 
+        name: '', 
+        email: '', 
+        phone: '', 
+        birth_place: '', 
+        birth_date: null as Date | null, 
+        address: '', 
+        gender: 'male', 
+        password: ''
     });
 
-    // Proteksi filter agar tidak error jika data patients kosong
     const filteredData = Array.isArray(patients) ? patients.filter(p => 
         (p.user?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
         (p.nik || "").includes(searchQuery)
     ) : [];
 
-    // FUNGSI 1: MEMBUKA MODAL (TAMBAH / EDIT)
     const openModal = (patient: any = null) => {
+        if (isDokter) return; // Dokter dilarang buka modal tambah/edit
         form.clearErrors();
         if (patient) {
             setEditData(patient);
@@ -49,47 +57,38 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
         setShowModal(true);
     };
 
-    // FUNGSI 2: KONFIRMASI HAPUS
     const confirmDelete = (nik: string) => {
+        if (isDokter) return;
         setSelectedNik(nik);
         setShowDeleteModal(true);
     };
 
-    // FUNGSI 3: EKSEKUSI HAPUS
     const executeDelete = () => {
         if (selectedNik) {
             router.delete(route('admin.pasien.destroy', selectedNik), {
                 onSuccess: () => {
                     setShowDeleteModal(false);
                     setSelectedNik(null);
+                    router.visit(route('admin.pasien.index'), { preserveScroll: true });
                 },
-                preserveScroll: true
             });
         }
     };
 
-    // FUNGSI 4: SIMPAN DATA
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Memformat tanggal ke YYYY-MM-DD untuk database
-        const formattedBirthDate = form.data.birth_date 
-            ? new Date(form.data.birth_date).toLocaleDateString('en-CA') 
-            : null;
-
-        const payload = { ...form.data, birth_date: formattedBirthDate };
         const options = { 
-            onSuccess: () => { 
-                setShowModal(false); 
-                form.reset(); 
-            },
-            preserveScroll: true 
+            onSuccess: () => { setShowModal(false); form.reset(); },
+            preserveScroll: true,
+            transform: (data: any) => ({
+                ...data,
+                birth_date: data.birth_date ? new Date(data.birth_date).toISOString().split('T')[0] : null
+            })
         };
-
         if (editData) {
-            router.put(route('admin.pasien.update', editData.nik), payload, options);
+            form.put(route('admin.pasien.update', editData.nik), options);
         } else {
-            router.post(route('admin.pasien.store'), payload, options);
+            form.post(route('admin.pasien.store'), options);
         }
     };
 
@@ -116,7 +115,13 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#8BAFBF] group-focus-within:text-[#053247]" size={18} />
                                 <input type="text" placeholder="Cari NIK/Nama..." className="w-full pl-14 pr-5 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] outline-none focus:border-[#053247] transition-all" onChange={(e) => setSearchQuery(e.target.value)} />
                             </div>
-                            <button onClick={() => openModal()} className="bg-[#053247] text-white px-8 py-4 rounded-[22px] font-black flex items-center justify-center gap-2 hover:shadow-lg transition-all active:scale-95"><Plus size={20} /> Tambah Pasien</button>
+                            
+                            {/* HANYA ADMIN/RADIOGRAFER YANG BISA TAMBAH PASIEN */}
+                            {!isDokter && (
+                                <button onClick={() => openModal()} className="bg-[#053247] text-white px-8 py-4 rounded-[22px] font-black flex items-center justify-center gap-2 hover:shadow-lg transition-all active:scale-95">
+                                    <Plus size={20} /> Tambah Pasien
+                                </button>
+                            )}
                         </div>
                     </section>
 
@@ -139,11 +144,18 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                                             <td className="px-8 py-5 text-left text-sm text-[#8BAFBF] truncate max-w-[200px]">{p.address}</td>
                                             <td className="px-8 py-5 text-center">
                                                 <div className="flex justify-center gap-3">
-                                                    <Link href={route('admin.pasien.riwayat', p.nik)} className="p-3 bg-[#E6F6F4] text-[#0D9488] rounded-2xl border border-[#C3E3EE] hover:bg-[#0D9488] hover:text-white transition-all shadow-sm">
-                                                        <RefreshCcw size={18} />
+                                                    {/* TOMBOL LIHAT DETAIL - SEMUA ROLE BISA */}
+                                                    <Link href={route('admin.pasien.riwayat', p.nik)} className="p-3 bg-[#E6F6F4] text-[#0D9488] rounded-2xl border border-[#C3E3EE] hover:bg-[#0D9488] hover:text-white transition-all shadow-sm flex items-center gap-2 font-bold text-xs uppercase px-5">
+                                                        <LucideEye size={18} /> {isDokter ? 'Lihat Detail' : ''}
                                                     </Link>
-                                                    <button onClick={() => openModal(p)} className="p-3 bg-[#EBF8FE] text-[#053247] rounded-2xl border border-[#C3E3EE] hover:bg-[#053247] hover:text-white transition-all"><Edit2 size={18} /></button>
-                                                    <button onClick={() => confirmDelete(p.nik)} className="p-3 bg-[#FFF3F3] text-[#FF5B5B] rounded-2xl border border-[#FFDEDE] hover:bg-[#FF5B5B] hover:text-white transition-all"><Trash2 size={18} /></button>
+
+                                                    {/* TOMBOL EDIT & DELETE - HANYA ADMIN/BUKAN DOKTER */}
+                                                    {!isDokter && (
+                                                        <>
+                                                            <button onClick={() => openModal(p)} className="p-3 bg-[#EBF8FE] text-[#053247] rounded-2xl border border-[#C3E3EE] hover:bg-[#053247] hover:text-white transition-all"><Edit2 size={18} /></button>
+                                                            <button onClick={() => confirmDelete(p.nik)} className="p-3 bg-[#FFF3F3] text-[#FF5B5B] rounded-2xl border border-[#FFDEDE] hover:bg-[#FF5B5B] hover:text-white transition-all"><Trash2 size={18} /></button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -155,10 +167,11 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                 </div>
             </main>
 
-            {/* MODAL FORM */}
-            {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#053247]/60 backdrop-blur-sm text-left">
-                    <div className="bg-white w-full max-w-4xl rounded-[50px] shadow-2xl border border-[#C3E3EE] overflow-y-auto max-h-[90vh]">
+            {/* MODAL FORM (Hanya untuk Admin/Radiografer) */}
+            {!isDokter && showModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-[#053247]/60 backdrop-blur-sm text-left">
+                    <div className="bg-white w-full max-w-4xl rounded-[50px] shadow-2xl border border-[#C3E3EE] overflow-y-auto max-h-[90vh]" style={{ scrollbarWidth: 'none' }}>
+                        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
                         <div className="px-10 py-8 border-b border-[#F1FBFF] flex justify-between items-center bg-white sticky top-0 z-10 font-black uppercase">
                             <h3 className="text-2xl text-[#053247]">{editData ? 'Edit Pasien' : 'Registrasi Pasien'}</h3>
                             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-red-50 text-red-500 rounded-full transition-all"><X size={28} /></button>
@@ -170,22 +183,14 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                                 <ModalInput label="Email" type="email" value={form.data.email} onChange={(e:any) => form.setData('email', e.target.value)} icon={<Mail size={18}/>} error={form.errors.email} />
                                 <ModalInput label="No. Telepon" value={form.data.phone} onChange={(e:any) => form.setData('phone', e.target.value.replace(/\D/g, ''))} icon={<Phone size={18}/>} error={form.errors.phone} />
                                 <ModalInput label="Tempat Lahir" value={form.data.birth_place} onChange={(e:any) => form.setData('birth_place', e.target.value)} icon={<MapPin size={18}/>} error={form.errors.birth_place} />
-                                
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70">Tanggal Lahir</label>
                                     <div className="relative">
                                         <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF] z-10" size={18} />
-                                        <DatePicker 
-                                            selected={form.data.birth_date} 
-                                            onChange={(date: Date | null) => form.setData('birth_date', date)} 
-                                            className="w-full pl-16 pr-6 py-4 bg-white border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247] outline-none shadow-inner focus:border-[#053247] transition-all"
-                                            dateFormat="dd/MM/yyyy"
-                                            placeholderText="Pilih tanggal"
-                                        />
+                                        <DatePicker selected={form.data.birth_date} onChange={(date: Date | null) => form.setData('birth_date', date)} className="w-full pl-16 pr-6 py-4 bg-white border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247] outline-none shadow-inner focus:border-[#053247] transition-all" dateFormat="dd/MM/yyyy" placeholderText="Pilih tanggal" />
                                     </div>
                                     {form.errors.birth_date && <p className="text-red-500 text-[10px] font-black italic ml-4">{form.errors.birth_date}</p>}
                                 </div>
-
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70">Jenis Kelamin</label>
                                     <div className="flex gap-4">
@@ -197,30 +202,28 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                                     </div>
                                 </div>
                                 <ModalInput label="Password" type="password" value={form.data.password} onChange={(e:any) => form.setData('password', e.target.value)} icon={<Lock size={18}/>} error={form.errors.password} placeholder={editData ? "Kosongkan jika tak diubah" : "********"} />
-                                <div className="md:col-span-2">
-                                    <ModalInput label="Alamat Lengkap" value={form.data.address} onChange={(e:any) => form.setData('address', e.target.value)} icon={<MapPin size={18}/>} error={form.errors.address} />
-                                </div>
+                                <div className="md:col-span-2"><ModalInput label="Alamat Lengkap" value={form.data.address} onChange={(e:any) => form.setData('address', e.target.value)} icon={<MapPin size={18}/>} error={form.errors.address} /></div>
                             </div>
                             <button disabled={form.processing} className="w-full py-5 bg-[#053247] text-white rounded-[28px] font-black text-xl shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-3">
-                                <Save size={24} /> {form.processing ? 'Menyimpan...' : 'Simpan Data Pasien'}
+                                <Save size={24} /> {form.processing ? 'Memproses...' : 'Simpan Data Pasien'}
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* MODAL DELETE */}
-            {showDeleteModal && (
+            {/* MODAL DELETE (Hanya untuk Admin/Radiografer) */}
+            {!isDokter && showDeleteModal && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-[#053247]/70 backdrop-blur-md transition-all duration-300">
-                    <div className="bg-white w-full max-w-md rounded-[45px] shadow-2xl p-10 text-center space-y-6 border border-[#C3E3EE] transform animate-in slide-in-from-bottom-4">
+                    <div className="bg-white w-full max-w-md rounded-[45px] shadow-2xl p-10 text-center space-y-6 border border-[#C3E3EE]">
                         <div className="mx-auto w-24 h-24 bg-[#FFF3F3] text-[#FF5B5B] rounded-[30px] flex items-center justify-center border border-[#FFDEDE] shadow-inner"><AlertCircle size={48} /></div>
                         <div className="space-y-2">
                             <h4 className="text-2xl font-black text-[#053247]">Hapus Pasien?</h4>
-                            <p className="text-[#8BAFBF] font-medium leading-relaxed text-sm">Tindakan ini permanen. Data pasien akan dihapus dari sistem DeTech.</p>
+                            <p className="text-[#8BAFBF] font-medium text-sm">Tindakan ini permanen.</p>
                         </div>
                         <div className="flex flex-col gap-3">
                             <button onClick={executeDelete} className="w-full py-4 bg-[#FF5B5B] text-white rounded-[22px] font-black text-lg shadow-lg hover:bg-red-600 transition-all">Hapus Permanen</button>
-                            <button onClick={() => setShowDeleteModal(false)} className="w-full py-4 bg-[#F1FBFF] text-[#053247] rounded-[22px] font-black text-lg hover:bg-[#EBF8FE] transition-all">Batal</button>
+                            <button onClick={() => setShowDeleteModal(false)} className="w-full py-4 bg-[#F1FBFF] text-[#053247] rounded-[22px] font-black text-lg">Batal</button>
                         </div>
                     </div>
                 </div>
@@ -232,12 +235,12 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
 function ModalInput({ label, value, onChange, icon, error, type = "text", placeholder = "", maxLength, readOnly }: any) {
     return (
         <div className="space-y-2 group text-left">
-            <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70 transition-opacity">{label}</label>
+            <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70">{label}</label>
             <div className="relative">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF] group-focus-within:text-[#053247] transition-colors">{icon}</div>
                 <input 
                     type={type} value={value} onChange={onChange} placeholder={placeholder} maxLength={maxLength} readOnly={readOnly}
-                    className={`w-full pl-16 pr-6 py-4 bg-white border ${error ? 'border-red-400' : 'border-[#C3E3EE]'} ${readOnly ? 'bg-gray-100' : ''} rounded-[22px] font-bold text-[#053247] outline-none focus:border-[#053247] focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner placeholder:text-[#8BAFBF]/40`} 
+                    className={`w-full pl-16 pr-6 py-4 bg-white border ${error ? 'border-red-400 focus:border-red-400' : 'border-[#C3E3EE] focus:border-[#053247]'} ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''} rounded-[22px] font-bold text-[#053247] outline-none focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner placeholder:text-[#8BAFBF]/40`} 
                 />
             </div>
             {error && <p className="text-red-500 text-[10px] font-black italic ml-4 mt-1 uppercase tracking-wider">{error}</p>}
