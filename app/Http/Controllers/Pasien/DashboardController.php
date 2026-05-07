@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Radiograph;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DashboardController extends Controller
 {
@@ -63,10 +64,15 @@ class DashboardController extends Controller
         ->where('id_radiograph', $id)
         ->firstOrFail();
 
-    // Memuat view blade dan mengirim data
-    $pdf = Pdf::loadView('pdf.hasil_deteksi', compact('radiograph'));
+    // 1. Buat URL Verifikasi
+    $verifyUrl = route('verify.pemeriksaan', $radiograph->id_radiograph);
+    
+    // 2. Generate QR Code (Base64) agar bisa dibaca PDF
+    $qrcode = base64_encode(QrCode::format('svg')->size(100)->errorCorrection('H')->generate($verifyUrl));
 
-    // Download file dengan nama ID Radiografi
+    // 3. Kirim variabel qrcode ke blade
+    $pdf = Pdf::loadView('pdf.hasil_deteksi', compact('radiograph', 'qrcode'));
+
     return $pdf->download('Hasil_Deteksi_'.$radiograph->id_radiograph.'.pdf');
 }
 }

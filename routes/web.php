@@ -16,6 +16,8 @@ use App\Http\Controllers\Pasien\DashboardController as PasienDashboard;
 use App\Http\Controllers\Dokter\DashboardController as DokterDashboard;
 use App\Http\Controllers\Radiografer\DashboardController as RadiograferDashboard;
 use App\Http\Controllers\Dokter\VerifikasiController ;
+use App\Http\Controllers\PublicVerifyController ;
+
 
 
 
@@ -28,6 +30,7 @@ use App\Http\Controllers\Dokter\VerifikasiController ;
 Route::get('/', function () {
     return Inertia::render('Welcome');
 });
+Route::get('/verify/{id}', [App\Http\Controllers\PublicVerifyController::class, 'show'])->name('verify.pemeriksaan');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     

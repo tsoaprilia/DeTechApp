@@ -246,14 +246,20 @@
         @endforeach
     </table>
 
-    <div class="footer clearfix">
-        <div class="sign-area">
-            <p>Surabaya, {{ date('d F Y') }}</p>
-            <p style="margin-bottom: 60px;">Dokter Pemeriksa,</p>
-            <p><strong>{{ $radiograph->dokter->name ?? 'Admin DeTech' }}</strong></p>
-            <div style="border-top: 1px solid #053247; margin-top: 5px; font-size: 8px; color: #8BAFBF;">Electronic Signature Verified</div>
-        </div>
+    <div class="sign-area">
+    <p>Surabaya, {{ date('d F Y') }}</p>
+    <p style="margin-bottom: 10px;">Dokter Pemeriksa,</p>
+    
+    <!-- TAMPILAN QR CODE -->
+    <div style="margin-bottom: 10px;">
+        <img src="data:image/svg+xml;base64,{{ $qrcode }}" style="width: 80px; height: 80px;">
     </div>
+    
+    <p><strong>{{ $radiograph->dokter->name ?? 'Admin DeTech' }}</strong></p>
+    <div style="border-top: 1px solid #053247; margin-top: 5px; font-size: 8px; color: #8BAFBF; text-transform: uppercase;">
+        Scan to Verify Original Document
+    </div>
+</div>
 
 </body>
 </html>
