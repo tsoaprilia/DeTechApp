@@ -223,6 +223,8 @@
                     @php 
                         $check = $radiograph->detections->where('no_fdi', $fdi)->first(); 
                         $path = public_path("storage/radiographs/crop_{$fdi}_{$imgName}.jpg");
+                        $analysis = $check ? trim((string) $check->analysis) : '';
+                        $showAnalysis = $analysis !== '' && !in_array(strtolower($analysis), ['akurat', 'input manual']);
                     @endphp
                     <td class="crop-card">
                         <div class="img-wrapper">
@@ -235,9 +237,9 @@
                         <div class="crop-no">Gigi #{{ $fdi }}</div>
                         
                         {{-- MENAMPILKAN ANALISIS DARI DATABASE --}}
-                        @if($check)
-                            <div class="crop-status">"{{ $check->analysis }}"</div>
-                        @else
+                        @if($check && $showAnalysis)
+                            <div class="crop-status">"{{ $analysis }}"</div>
+                        @elseif(!$check)
                             <div style="font-size: 8px; color: #9CA3AF;">Tidak Terdeteksi</div>
                         @endif
                     </td>

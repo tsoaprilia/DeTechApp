@@ -61,6 +61,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/deteksi', [DetectionController::class, 'index'])->name('deteksi');
         Route::post('/deteksi/store', [DetectionController::class, 'store'])->name('deteksi.store');
         Route::get('/deteksi/detail/{id}', [DetectionController::class, 'show'])->name('deteksi.detail');
+        Route::get('/deteksi/print/{id}', [DetectionController::class, 'printPDF'])->name('deteksi.print');
         Route::get('/deteksi/analyze/{id}', [DetectionController::class, 'analyze'])->name('deteksi.analyze');
         Route::post('/deteksi/finalize/{id}', [DetectionController::class, 'finalize'])->name('deteksi.finalize');
 

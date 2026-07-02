@@ -1,7 +1,7 @@
 import { PageProps } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { 
     ShieldCheck, QrCode, Search, CheckCircle, 
     Activity, ChevronRight, ArrowRight 
@@ -10,6 +10,14 @@ import {
 export default function Welcome({ auth }: PageProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [activeSection, setActiveSection] = useState('tentang');
+
+    const navItems = [
+        { label: 'Tentang Kami', href: '#tentang', id: 'tentang' },
+        { label: 'Keunggulan', href: '#keunggulan', id: 'keunggulan' },
+        { label: 'Verifikasi', href: '#verifikasi', id: 'verifikasi' },
+        { label: 'Layanan', href: '#layanan', id: 'layanan' },
+    ];
 
     const stats = [
         { label: 'Dataset', value: '200', unit: '', color: 'bg-[#F2F2F2]' },
@@ -26,11 +34,11 @@ export default function Welcome({ auth }: PageProps) {
         if (currentIndex > 0) setCurrentIndex(prev => prev - 1);
     };
 
-    const floatingVariants = {
+    const floatingVariants: Variants = {
         animate: (i: number) => ({
             rotate: i % 2 === 0 ? [1, -1, 1] : [-1, 1, -1],
             y: [0, -5, 0],
-            transition: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }
+            transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const, delay: i * 0.2 }
         })
     };
 
@@ -38,8 +46,37 @@ export default function Welcome({ auth }: PageProps) {
         initial: { opacity: 0, y: 40 },
         whileInView: { opacity: 1, y: 0 },
         viewport: { once: true },
-        transition: { duration: 0.7, ease: "easeOut" }
+        transition: { duration: 0.7, ease: "easeOut" as const }
     };
+
+    useEffect(() => {
+        const updateActiveSection = () => {
+            const scrollPosition = window.scrollY + 160;
+
+            for (const item of [...navItems].reverse()) {
+                const section = document.getElementById(item.id);
+
+                if (section && section.offsetTop <= scrollPosition) {
+                    setActiveSection(item.id);
+                    return;
+                }
+            }
+
+            setActiveSection('tentang');
+        };
+
+        updateActiveSection();
+        window.addEventListener('scroll', updateActiveSection, { passive: true });
+
+        return () => window.removeEventListener('scroll', updateActiveSection);
+    }, []);
+
+    const getNavLinkClass = (id: string) =>
+        `relative rounded-full px-5 py-2.5 text-[18px] font-semibold transition-all ${
+            activeSection === id
+                ? 'bg-[#053247] text-white shadow-[0_10px_24px_rgba(5,50,71,0.18)]'
+                : 'text-[#053247] hover:bg-[#C3E3EE]/35 hover:text-[#053247]'
+        }`;
 
     return (
         <>
@@ -56,11 +93,17 @@ export default function Welcome({ auth }: PageProps) {
                             </div>
 
                             <div className="hidden md:flex absolute inset-0 justify-center items-center pointer-events-none">
-                                <div className="flex space-x-12 pointer-events-auto">
-                                    <a href="#tentang" className="text-[18px] text-[#053247] hover:text-[#8BAFBF] font-semibold transition-all">Tentang Kami</a>
-                                    <a href="#keunggulan" className="text-[18px] text-[#053247] hover:text-[#8BAFBF] font-semibold transition-all">Keunggulan</a>
-                                    <a href="#verifikasi" className="text-[18px] text-[#053247] hover:text-[#8BAFBF] font-semibold transition-all">Verifikasi</a>
-                                    <a href="#layanan" className="text-[18px] text-[#053247] hover:text-[#8BAFBF] font-semibold transition-all">Layanan</a>
+                                <div className="flex items-center gap-3 pointer-events-auto">
+                                    {navItems.map((item) => (
+                                        <a
+                                            key={item.id}
+                                            href={item.href}
+                                            onClick={() => setActiveSection(item.id)}
+                                            className={getNavLinkClass(item.id)}
+                                        >
+                                            {item.label}
+                                        </a>
+                                    ))}
                                 </div>
                             </div>
 
@@ -70,12 +113,42 @@ export default function Welcome({ auth }: PageProps) {
                                 </Link>
                                 <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 text-[#053247]">
                                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        {isOpen ? <path d="M6 18L18 6M6 6l12 12" strokeWidth="2" strokeLinecap="round"/> : <path d="M4 6h16|M4 12h16m-7 6h7" strokeWidth="2" strokeLinecap="round"/>}
+                                        {isOpen ? <path d="M6 18L18 6M6 6l12 12" strokeWidth="2" strokeLinecap="round"/> : <path d="M4 6h16M4 12h16m-7 6h7" strokeWidth="2" strokeLinecap="round"/>}
                                     </svg>
                                 </button>
                             </div>
                         </div>
                     </div>
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -12 }}
+                                className="md:hidden border-t border-gray-100 bg-white px-6 py-5 shadow-lg"
+                            >
+                                <div className="flex flex-col gap-3">
+                                    {navItems.map((item) => (
+                                        <a
+                                            key={item.id}
+                                            href={item.href}
+                                            onClick={() => {
+                                                setActiveSection(item.id);
+                                                setIsOpen(false);
+                                            }}
+                                            className={`rounded-2xl px-5 py-3 text-[17px] font-bold transition-all ${
+                                                activeSection === item.id
+                                                    ? 'bg-[#053247] text-white shadow-[0_10px_24px_rgba(5,50,71,0.18)]'
+                                                    : 'bg-[#F1FBFF] text-[#053247] hover:bg-[#C3E3EE]/45'
+                                            }`}
+                                        >
+                                            {item.label}
+                                        </a>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </nav>
 
                 {/* --- HERO SECTION --- */}
@@ -90,8 +163,8 @@ export default function Welcome({ auth }: PageProps) {
                                 Kami menghadirkan sistem cerdas yang membantu mendeteksi gigi susu anak secara otomatis melalui foto rontgen panoramik.
                             </p>
                             <div className="flex gap-6 mb-24">
-                                <Link href={route('register')} className="px-12 py-4 bg-[#053247] text-white font-bold rounded-full shadow-[0_15px_35px_rgba(5,50,71,0.3)] hover:scale-[1.05] transition-transform text-[19px]">
-                                    Daftar
+                                <Link href={route('login')} className="px-12 py-4 bg-[#053247] text-white font-bold rounded-full shadow-[0_15px_35px_rgba(5,50,71,0.3)] hover:scale-[1.05] transition-transform text-[19px]">
+                                    Masuk
                                 </Link>
                                 <a href="#keunggulan" className="px-12 py-4 bg-white text-[#053247] border border-[#C3E3EE] font-bold rounded-full shadow-[0_15px_35px_rgba(195,227,238,0.6)] hover:bg-[#C3E3EE]/20 transition-all text-[19px] text-center">
                                     Selengkapnya

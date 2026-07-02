@@ -54,7 +54,7 @@ class DokterController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = User::findOrFail($id);
+        $user = User::where('role', 'dokter')->findOrFail($id);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -81,7 +81,7 @@ class DokterController extends Controller
      */
   public function destroy($id)
 {
-    $user = User::findOrFail($id);
+    $user = User::where('role', 'dokter')->findOrFail($id);
     $user->delete();
 
     // Pastikan menggunakan rute index

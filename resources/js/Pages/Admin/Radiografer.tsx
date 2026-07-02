@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import Sidebar from '@/Components/Admin/Sidebar';
 import Header from '@/Components/Admin/Header';
-import { User, Search, Edit2, Trash2, Plus, Phone, Mail, X, Save, Lock, Hash, ShieldCheck, AlertCircle } from 'lucide-react';
+import { User, Search, Edit2, Trash2, Plus, Phone, Mail, X, Save, Lock, ShieldCheck, AlertCircle, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Radiografer({ auth, radiografers = [] }: { auth: any, radiografers: any[] }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,6 +11,9 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [editData, setEditData] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '', email: '', phone: '', password: '',
@@ -20,9 +23,19 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
         r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         r.id.toString().includes(searchQuery)
     );
+    const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+    const visibleData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const startItem = filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, filteredData.length);
+
+    const updateSearch = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+    };
 
     const openModal = (radiografer: any = null) => {
         clearErrors();
+        setShowPassword(false);
         if (radiografer) {
             setEditData(radiografer);
             setData({
@@ -45,13 +58,20 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
 
    const executeDelete = () => {
     if (selectedId) {
-        // GANTI kunci 'id' menjadi 'radiografer' sesuai standar Resource Controller
         router.delete(route('admin.radiografer.destroy', { radiografer: selectedId }), {
             onSuccess: () => {
                 setShowDeleteModal(false);
                 setSelectedId(null);
+                router.visit(route('admin.radiografer.index'), {
+                    replace: true,
+                    preserveScroll: true,
+                });
             },
-            preserveState: false, // Memaksa refresh data
+            onError: () => {
+                setShowDeleteModal(false);
+                setSelectedId(null);
+            },
+            preserveState: true,
             preserveScroll: true
         });
     }
@@ -93,7 +113,7 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
                                     type="text" 
                                     placeholder="Cari Nama/ID..." 
                                     className="w-full pl-14 pr-5 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] text-[#053247] font-medium outline-none focus:border-[#053247] focus:ring-4 focus:ring-[#053247]/5 transition-all"
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => updateSearch(e.target.value)}
                                 />
                             </div>
                             <button 
@@ -119,7 +139,7 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#F1FBFF]">
-                                    {filteredData.map((user) => (
+                                    {visibleData.map((user) => (
                                         <tr key={user.id} className="hover:bg-[#F1FBFF]/40 transition-colors group">
                                             <td className="px-8 py-5">
                                                 <span className="font-bold text-[#053247]">#{user.id}</span>
@@ -139,9 +159,20 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
                                             </td>
                                         </tr>
                                     ))}
+                                    {visibleData.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="px-8 py-14 text-center">
+                                                <div className="mx-auto max-w-md rounded-[28px] border-2 border-dashed border-[#C3E3EE] bg-[#F8FDFF] p-8">
+                                                    <p className="text-lg font-black text-[#053247]">Data tidak ditemukan</p>
+                                                    <p className="mt-1 text-sm font-bold text-[#8BAFBF]">Coba ubah kata kunci pencarian.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+                        <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} startItem={startItem} endItem={endItem} totalItems={filteredData.length} label="radiografer" />
                     </div>
                 </div>
             </main>
@@ -170,10 +201,49 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
                                     icon={<Phone size={18}/>} 
                                     error={errors.phone} 
                                 />
-                                <ModalInput label="Password" type="password" value={data.password} onChange={(e:any) => setData('password', e.target.value)} icon={<Lock size={18}/>} error={errors.password} placeholder={editData ? "Kosongkan jika tak diubah" : "Minimal 8 karakter"} />
+                                {editData && (
+                                    <div className="space-y-2 group text-left">
+                                        <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70">
+                                            Password Saat Ini
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF]">
+                                                <Lock size={18} />
+                                            </div>
+                                            <input
+                                                type="password"
+                                                value="password-ter-enkripsi"
+                                                disabled
+                                                className="w-full pl-16 pr-6 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247]/55 outline-none shadow-inner cursor-not-allowed"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-[#8BAFBF] ml-4 leading-relaxed">
+                                            Password asli tersimpan terenkripsi, jadi tidak bisa ditampilkan. Isi password baru di bawah untuk menggantinya.
+                                        </p>
+                                    </div>
+                                )}
+                                <ModalInput
+                                    label={editData ? "Password Baru" : "Password"}
+                                    type={showPassword ? "text" : "password"}
+                                    value={data.password}
+                                    onChange={(e:any) => setData('password', e.target.value)}
+                                    icon={<Lock size={18}/>}
+                                    error={errors.password}
+                                    placeholder={editData ? "Isi jika ingin mengganti password" : "Minimal 8 karakter"}
+                                    rightAction={
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword((value) => !value)}
+                                            className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#8BAFBF] transition hover:bg-[#F1FBFF] hover:text-[#053247]"
+                                            aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                                        >
+                                            {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                                        </button>
+                                    }
+                                />
                             </div>
                             <button disabled={processing} className="w-full py-5 bg-[#053247] text-white rounded-[28px] font-black text-xl flex items-center justify-center gap-3 shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:bg-gray-400">
-                                <Save size={24} /> {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                <Save size={24} /> {processing ? 'Menyimpan...' : editData ? 'Simpan Perubahan' : 'Simpan Data'}
                             </button>
                         </form>
                     </div>
@@ -202,7 +272,39 @@ export default function Radiografer({ auth, radiografers = [] }: { auth: any, ra
     );
 }
 
-function ModalInput({ label, value, onChange, icon, error, type = "text", placeholder = "" }: any) {
+function Pagination({ currentPage, totalPages, setCurrentPage, startItem, endItem, totalItems, label }: any) {
+    return (
+        <div className="flex flex-col gap-4 border-t border-[#F1FBFF] px-6 py-5 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm font-bold text-[#8BAFBF]">
+                Menampilkan <span className="text-[#053247]">{startItem}-{endItem}</span> dari <span className="text-[#053247]">{totalItems}</span> {label}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+                <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page: number) => Math.max(1, page - 1))} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#C3E3EE] text-[#053247] transition-all hover:bg-[#053247] hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white disabled:hover:text-[#053247]">
+                    <ChevronLeft size={19} />
+                </button>
+                {Array.from({ length: totalPages }).map((_, index) => {
+                    const page = index + 1;
+                    const shouldShow = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                    const previousShouldShow = page > 1 && (page - 1 === 1 || page - 1 === totalPages || Math.abs(page - 1 - currentPage) <= 1);
+
+                    if (!shouldShow && previousShouldShow) return <span key={`ellipsis-${page}`} className="px-2 text-[#8BAFBF] font-black">...</span>;
+                    if (!shouldShow) return null;
+
+                    return (
+                        <button type="button" key={page} onClick={() => setCurrentPage(page)} className={`h-11 min-w-11 rounded-2xl px-4 text-sm font-black transition-all ${currentPage === page ? 'bg-[#053247] text-white shadow-[0_10px_24px_rgba(5,50,71,0.18)]' : 'border border-[#C3E3EE] bg-white text-[#053247] hover:bg-[#F1FBFF]'}`}>
+                            {page}
+                        </button>
+                    );
+                })}
+                <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page: number) => Math.min(totalPages, page + 1))} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#C3E3EE] text-[#053247] transition-all hover:bg-[#053247] hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white disabled:hover:text-[#053247]">
+                    <ChevronRight size={19} />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function ModalInput({ label, value, onChange, icon, error, type = "text", placeholder = "", rightAction = null }: any) {
     return (
         <div className="space-y-2 group text-left">
             <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70 group-focus-within:opacity-100 transition-opacity">{label}</label>
@@ -213,8 +315,9 @@ function ModalInput({ label, value, onChange, icon, error, type = "text", placeh
                     value={value} 
                     onChange={onChange} 
                     placeholder={placeholder} 
-                    className={`w-full pl-16 pr-6 py-4 bg-white border ${error ? 'border-red-400' : 'border-[#C3E3EE]'} rounded-[22px] font-bold text-[#053247] placeholder:text-[#8BAFBF]/50 outline-none focus:border-[#053247] focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner`} 
+                    className={`w-full pl-16 ${rightAction ? 'pr-16' : 'pr-6'} py-4 bg-white border ${error ? 'border-red-400' : 'border-[#C3E3EE]'} rounded-[22px] font-bold text-[#053247] placeholder:text-[#8BAFBF]/50 outline-none focus:border-[#053247] focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner`} 
                 />
+                {rightAction}
             </div>
             {error && <p className="text-red-500 text-[10px] font-black italic ml-4 mt-1 uppercase tracking-wider">{error}</p>}
         </div>

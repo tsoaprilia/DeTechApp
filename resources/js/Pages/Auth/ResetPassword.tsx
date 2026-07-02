@@ -1,7 +1,8 @@
 import InputError from '@/Components/InputError';
 import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPassword({
     token,
@@ -10,6 +11,8 @@ export default function ResetPassword({
     token: string;
     email: string;
 }) {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         token: token,
         email: email,
@@ -35,21 +38,21 @@ export default function ResetPassword({
                 <div 
                     className="absolute inset-0 opacity-20 pointer-events-none"
                     style={{ 
-                        backgroundImage: `url('assets/images/line-pattern.png')`,
+                        backgroundImage: `url('/assets/images/line-pattern.png')`,
                         backgroundSize: 'cover' 
                     }}
                 />
                 
                 <div className="relative z-10 w-full max-w-[500px]">
                     <div className="flex items-center gap-3 mb-10">
-                        <img src="assets/images/logo-detech.png" alt="Logo" className="h-14 w-auto drop-shadow-md" />
+                        <img src="/assets/images/logo-detech.png" alt="Logo" className="h-14 w-auto drop-shadow-md" />
                         <span className="text-3xl font-bold text-white tracking-tight">DeTech</span>
                     </div>
 
                     <div className="relative"> 
                         <div className="relative rounded-[50px] p-2 bg-white/20 backdrop-blur-md border border-white/30 shadow-2xl aspect-[4/5] flex items-end overflow-hidden">
                             <img 
-                                src="assets/images/doctor-login.png" 
+                                src="/assets/images/doctor-login.png" 
                                 alt="Security Support" 
                                 className="absolute inset-0 w-full h-full object-cover scale-110"
                             />
@@ -107,31 +110,51 @@ export default function ResetPassword({
                         {/* Input Password Baru (Style Biru Muda Tanpa Border) */}
                         <div>
                             <label className="block text-sm font-bold text-[#053247] mb-2.5">Kata Sandi Baru</label>
+                            <div className="relative">
                             <input
                                 id="password"
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 name="password"
                                 value={data.password}
                                 placeholder="••••••••••••"
-                                className="w-full bg-[#F4F9FB] border-2 border-transparent rounded-2xl py-4.5 px-6 text-[#053247] font-semibold focus:outline-none focus:border-[#8BAFBF] focus:bg-white focus:ring-4 focus:ring-[#8BAFBF]/10 transition-all placeholder:text-gray-300"
+                                className="w-full bg-[#F4F9FB] border-2 border-transparent rounded-2xl py-4.5 pl-6 pr-14 text-[#053247] font-semibold focus:outline-none focus:border-[#8BAFBF] focus:bg-white focus:ring-4 focus:ring-[#8BAFBF]/10 transition-all placeholder:text-gray-300"
                                 onChange={(e) => setData('password', e.target.value)}
                                 autoFocus
                             />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((visible) => !visible)}
+                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-[#8BAFBF] transition hover:text-[#053247]"
+                                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                             <InputError message={errors.password} className="mt-2" />
                         </div>
 
                         {/* Input Konfirmasi Password (Style Biru Muda Tanpa Border) */}
                         <div>
                             <label className="block text-sm font-bold text-[#053247] mb-2.5">Konfirmasi Kata Sandi</label>
+                            <div className="relative">
                             <input
                                 id="password_confirmation"
-                                type="password"
+                                type={showPasswordConfirmation ? 'text' : 'password'}
                                 name="password_confirmation"
                                 value={data.password_confirmation}
                                 placeholder="••••••••••••"
-                                className="w-full bg-[#F4F9FB] border-2 border-transparent rounded-2xl py-4.5 px-6 text-[#053247] font-semibold focus:outline-none focus:border-[#8BAFBF] focus:bg-white focus:ring-4 focus:ring-[#8BAFBF]/10 transition-all placeholder:text-gray-300"
+                                className="w-full bg-[#F4F9FB] border-2 border-transparent rounded-2xl py-4.5 pl-6 pr-14 text-[#053247] font-semibold focus:outline-none focus:border-[#8BAFBF] focus:bg-white focus:ring-4 focus:ring-[#8BAFBF]/10 transition-all placeholder:text-gray-300"
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
                             />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPasswordConfirmation((visible) => !visible)}
+                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-[#8BAFBF] transition hover:text-[#053247]"
+                                    aria-label={showPasswordConfirmation ? 'Sembunyikan konfirmasi kata sandi' : 'Tampilkan konfirmasi kata sandi'}
+                                >
+                                    {showPasswordConfirmation ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                             <InputError message={errors.password_confirmation} className="mt-2" />
                         </div>
 

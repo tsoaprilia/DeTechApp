@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -30,8 +31,20 @@ class PasswordResetLinkController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'email' => 'required|email',
+            'email' => ['required', 'email', 'exists:users,email'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.exists' => 'Email tidak terdaftar di sistem DeTech.',
         ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user?->role === 'pasien' && str_ends_with($user->email, '@detech.id')) {
+            throw ValidationException::withMessages([
+                'email' => 'Pasien ini belum memiliki email aktif. Silakan login memakai NIK dan password default, lalu tambahkan email pada profil.',
+            ]);
+        }
 
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we

@@ -4,7 +4,7 @@ import Sidebar from '@/Components/Admin/Sidebar';
 import Header from '@/Components/Admin/Header';
 import { 
     User, ArrowLeft, RefreshCcw, MapPin, Hash, Fingerprint, Phone, Home, Mail,
-    Calendar, CheckCircle, Save, Info, Camera, Stethoscope, Download
+    Calendar, CheckCircle, Save, Info, Camera, Stethoscope, Download, ChevronDown, AlertCircle
 } from 'lucide-react';
 
 const TOP_TEETH = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
@@ -13,15 +13,18 @@ const BOTTOM_TEETH = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
 export default function DetailDeteksi({ auth, radiograph,temp_results, temp_image }: any) {
     const { flash }: any = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { post, processing } = useForm();
+    const { post, processing } = useForm({});
 
     const [progress, setProgress] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
     const [curatedData, setCuratedData] = useState<any[]>([]);
+    const [hasAnalysisResult, setHasAnalysisResult] = useState(Array.isArray(temp_results));
 
     //REVISI
     // State untuk menyimpan nomor gigi yang dipilih secara manual
     const [selectedManualTeeth, setSelectedManualTeeth] = useState("");
+    const [showManualTeethMenu, setShowManualTeethMenu] = useState(false);
+    const [notice, setNotice] = useState<{ type: 'warning' | 'success'; message: string } | null>(null);
     // State untuk menyimpan data gigi yang sedang diedit catatannya (untuk Modal/Pop-up)
     const [editingTeeth, setEditingTeeth] = useState<any>(null); 
 
@@ -40,16 +43,16 @@ export default function DetailDeteksi({ auth, radiograph,temp_results, temp_imag
     const dokterName = radiograph.dokter?.name || (radiograph.status === 'verified' ? 'Admin DeTech' : 'Belum Diverifikasi');
     // Tambahkan di dalam fungsi utama DetailDeteksi sebelum return
 const handleDownloadPDF = () => {
-    // Mengarahkan ke rute cetak yang sudah ada
-    window.open(route('pasien.deteksi.print', radiograph.id_radiograph), '_blank');
+    window.open(route('admin.deteksi.print', radiograph.id_radiograph), '_blank');
 };
 
  useEffect(() => {
     // 1. Reset data lama dulu supaya nggak nyampur sama hasil baru
     setCuratedData([]);
+    setHasAnalysisResult(Array.isArray(temp_results));
 
     // 2. Ambil data baru dari PROPS
-    if (temp_results && temp_results.length > 0) {
+    if (Array.isArray(temp_results) && temp_results.length > 0) {
         console.log("Data Deteksi Baru:", temp_results); // Buat cek di console browser
         
         const freshData = temp_results.map((res: any) => ({
@@ -67,6 +70,13 @@ const handleDownloadPDF = () => {
         setDisplayImage(`radiographs/${fileName}?t=${new Date().getTime()}`);
     }
 }, [temp_results, temp_image]); // Pantau perubahan data deteksi
+
+    useEffect(() => {
+        if (!notice) return;
+
+        const timer = window.setTimeout(() => setNotice(null), 2600);
+        return () => window.clearTimeout(timer);
+    }, [notice]);
 
     const handleStartDetection = () => {
     setIsProcessing(true);
@@ -87,14 +97,16 @@ const handleDownloadPDF = () => {
 
     const submitFinal = () => {
         const finalData = curatedData.filter(d => d.is_selected);
-        if (finalData.length === 0) return alert("Pilih minimal satu gigi.");
 const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
         router.post(targetRoute, { selected_detections: finalData }, { preserveScroll: true });
     };
 
     //REVISI
     const handleAddManual = () => {
-    if (!selectedManualTeeth) return alert("Pilih nomor gigi terlebih dahulu");
+    if (!selectedManualTeeth) {
+        setNotice({ type: 'warning', message: 'Pilih nomor gigi terlebih dahulu.' });
+        return;
+    }
     
     const newEntry = {
         fdi: selectedManualTeeth,
@@ -105,6 +117,8 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
 
     setCuratedData([...curatedData, newEntry]);
     setSelectedManualTeeth("");
+    setShowManualTeethMenu(false);
+    setNotice({ type: 'success', message: `Gigi #${selectedManualTeeth} berhasil ditambahkan.` });
     };
 
     // Fungsi untuk mengubah status gigi (Benar ke Salah atau sebaliknya)
@@ -120,6 +134,25 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
             <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} auth={auth} />
             
             <main className="flex-1 bg-[#F1FBFF] relative overflow-y-auto lg:rounded-l-[60px] shadow-2xl transition-all duration-500">
+                {notice && (
+                    <div className="pointer-events-none fixed right-6 top-6 z-[200] flex w-[min(420px,calc(100vw-32px))] items-start gap-4 rounded-[24px] border border-[#C3E3EE] bg-white px-5 py-4 text-left shadow-[0_24px_70px_rgba(5,50,71,0.22)] animate-in fade-in slide-in-from-top-4 duration-300">
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                            notice.type === 'warning'
+                                ? 'bg-amber-50 text-amber-600'
+                                : 'bg-emerald-50 text-emerald-600'
+                        }`}>
+                            {notice.type === 'warning' ? <AlertCircle size={22} /> : <CheckCircle size={22} />}
+                        </div>
+                        <div className="min-w-0 pt-0.5">
+                            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8BAFBF]">
+                                {notice.type === 'warning' ? 'Perhatian' : 'Berhasil'}
+                            </p>
+                            <p className="mt-1 text-sm font-black leading-relaxed text-[#053247]">
+                                {notice.message}
+                            </p>
+                        </div>
+                    </div>
+                )}
                 <div className="px-8 lg:px-12"><Header auth={auth} onMenuClick={() => setSidebarOpen(true)} /></div>
                 
                 <div className="px-8 lg:px-12 pt-4 pb-12 space-y-6">
@@ -209,11 +242,11 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
 
                 {/* SECTION 2: PREVIEW GAMBAR */}
 <section className="bg-white p-10 rounded-[40px] shadow-sm border border-[#C3E3EE] space-y-8">
-    <div className={`grid gap-6 ${curatedData.length > 0 && radiograph.status === 'waiting' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+    <div className={`grid gap-6 ${hasAnalysisResult && radiograph.status === 'waiting' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
         
         {/* GAMBAR UTAMA: Selalu Tampil (Admin, Dokter, Radiografer bisa lihat) */}
         <div className="space-y-4 text-center">
-            {curatedData.length > 0 && radiograph.status === 'waiting' && (
+            {hasAnalysisResult && radiograph.status === 'waiting' && (
                 <p className="text-xs font-black text-[#8BAFBF] uppercase tracking-widest">Original Image</p>
             )}
             <div className="rounded-[30px] overflow-hidden bg-black flex justify-center border-4 border-[#F1FBFF] shadow-inner">
@@ -226,10 +259,10 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
         </div>
 
         {/* GAMBAR HASIL AI: Hanya muncul jika sudah dideteksi dan BUKAN radiografer */}
-        {auth.user.role !== 'radiografer' && radiograph.status === 'waiting' && curatedData.length > 0 && (
+        {auth.user.role !== 'radiografer' && radiograph.status === 'waiting' && hasAnalysisResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-700">
                 <p className="text-xs font-black text-emerald-500 uppercase tracking-widest text-center">
-                    AI Detection (YOLOv11) - Bounding Box
+                    AI Detection (YOLOv11)
                 </p>
                 <div className="rounded-[30px] overflow-hidden bg-black flex justify-center border-4 border-emerald-100 shadow-inner">
                     <img 
@@ -244,7 +277,7 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
     </div>
 
     {/* TOMBOL DETEKSI: Hanya muncul untuk Admin & Dokter */}
-    {auth.user.role !== 'radiografer' && radiograph.status === 'waiting' && curatedData.length === 0 && (
+    {auth.user.role !== 'radiografer' && radiograph.status === 'waiting' && !hasAnalysisResult && (
         <button 
             onClick={handleStartDetection} 
             disabled={isProcessing || processing} 
@@ -254,7 +287,7 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
         </button>
     )}
                        {/* SECTION 3: VERIFIKASI INTERAKTIF (ODONTOGRAM STYLE) */}
-{curatedData.length > 0 && radiograph.status === 'waiting' && (
+{hasAnalysisResult && radiograph.status === 'waiting' && (
     <div className="p-8 bg-white rounded-[40px] border-2 border-[#C3E3EE] shadow-sm animate-in fade-in zoom-in-95 duration-500">
         <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-black text-[#053247] flex items-center gap-3">
@@ -266,6 +299,15 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
                 <div className="flex items-center gap-2"><div className="w-3 h-3 bg-white border-2 border-dashed border-gray-300 rounded-full"></div> Tidak Ada</div>
             </div>
         </div>
+
+        {curatedData.length === 0 && (
+            <div className="mb-8 rounded-[28px] border border-amber-200 bg-amber-50 px-6 py-5 text-amber-800">
+                <p className="text-sm font-black uppercase tracking-widest">Tidak ada gigi susu terdeteksi</p>
+                <p className="mt-1 text-sm font-semibold text-amber-700/80">
+                    Pemeriksaan tetap bisa disimpan sebagai laporan. Semua odontogram akan ditandai tidak terdeteksi.
+                </p>
+            </div>
+        )}
 
         <div className="bg-[#F8FDFF] p-10 rounded-[30px] border border-[#C3E3EE] space-y-8 shadow-inner mb-8 text-center">
             {/* Baris Atas */}
@@ -311,16 +353,53 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
                 Tambah Gigi Secara Manual:
             </p>
             <div className="flex flex-col md:flex-row gap-4">
-                <select 
-                    value={selectedManualTeeth} 
-                    onChange={(e) => setSelectedManualTeeth(e.target.value)} 
-                    className="flex-1 border-gray-200 rounded-xl text-sm focus:ring-[#053247]"
-                >
-                    <option value="">Pilih Nomor Gigi...</option>
-                    {availableTeeth.map(fdi => (
-                        <option key={fdi} value={fdi}>Gigi #{fdi}</option>
-                    ))}
-                </select>
+                <div className="relative flex-1">
+                    <button
+                        type="button"
+                        onClick={() => setShowManualTeethMenu((value) => !value)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-5 py-3.5 text-left text-sm font-black shadow-sm transition-all ${
+                            showManualTeethMenu
+                                ? 'border-[#053247] bg-white ring-4 ring-[#053247]/5'
+                                : 'border-[#C3E3EE] bg-white text-[#053247] hover:border-[#053247]'
+                        }`}
+                    >
+                        <span className={selectedManualTeeth ? 'text-[#053247]' : 'text-[#8BAFBF]'}>
+                            {selectedManualTeeth ? `Gigi #${selectedManualTeeth}` : 'Pilih Nomor Gigi...'}
+                        </span>
+                        <ChevronDown size={18} className={`text-[#8BAFBF] transition-transform ${showManualTeethMenu ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showManualTeethMenu && (
+                        <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-[120] max-h-56 overflow-y-auto rounded-[24px] border border-[#C3E3EE] bg-white p-2 shadow-[0_24px_60px_rgba(5,50,71,0.18)] [scrollbar-width:thin] [scrollbar-color:#8BAFBF_#F1FBFF]">
+                            {availableTeeth.length > 0 ? (
+                                availableTeeth.map((fdi) => (
+                                    <button
+                                        key={fdi}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedManualTeeth(String(fdi));
+                                            setShowManualTeethMenu(false);
+                                        }}
+                                        className={`flex w-full items-center justify-between rounded-[18px] px-4 py-3 text-left text-sm font-black transition-all ${
+                                            selectedManualTeeth === String(fdi)
+                                                ? 'bg-[#053247] text-white shadow-[0_10px_24px_rgba(5,50,71,0.18)]'
+                                                : 'text-[#053247] hover:bg-[#F1FBFF]'
+                                        }`}
+                                    >
+                                        <span>Gigi #{fdi}</span>
+                                        <span className={selectedManualTeeth === String(fdi) ? 'text-white/70' : 'text-[#8BAFBF]'}>
+                                            Manual
+                                        </span>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="rounded-[18px] bg-[#F1FBFF] px-4 py-4 text-center text-sm font-black text-[#8BAFBF]">
+                                    Semua nomor gigi sudah masuk odontogram.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
                 <button 
                     onClick={handleAddManual} 
                     className="px-8 py-3 bg-[#053247] text-white rounded-xl font-bold hover:bg-black transition-all"
@@ -334,7 +413,7 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
             onClick={submitFinal} 
             className="w-full mt-8 py-5 bg-emerald-600 text-white rounded-[25px] font-black text-lg shadow-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
         >
-            <Save size={20} /> SIMPAN HASIL FINAL
+            <Save size={20} /> {curatedData.filter(d => d.is_selected).length === 0 ? 'SIMPAN LAPORAN TANPA DETEKSI' : 'SIMPAN HASIL FINAL'}
         </button>
     </div>
 )}
@@ -366,8 +445,8 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
                     const isDet = radiograph.detections?.some((d: any) => parseInt(d.no_fdi) === fdi);
                     return (
                         <div key={fdi} className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center font-black text-lg transition-all shadow-sm
-                            ${isDet ? 'bg-[#C3E3EE] text-[#053247] border-2 border-[#8BAFBF] scale-105' : 'bg-[#CBD5E1] text-transparent opacity-40'}`}>
-                            {isDet ? fdi : ''}
+                            ${isDet ? 'bg-[#C3E3EE] text-[#053247] border-2 border-[#8BAFBF] scale-105' : 'bg-[#CBD5E1] text-slate-500/70 opacity-60'}`}>
+                            {fdi}
                         </div>
                     );
                 })}
@@ -378,8 +457,8 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
                     const isDet = radiograph.detections?.some((d: any) => parseInt(d.no_fdi) === fdi);
                     return (
                         <div key={fdi} className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center font-black text-lg transition-all shadow-sm
-                            ${isDet ? 'bg-[#C3E3EE] text-[#053247] border-2 border-[#8BAFBF] scale-105' : 'bg-[#CBD5E1] text-transparent opacity-40'}`}>
-                            {isDet ? fdi : ''}
+                            ${isDet ? 'bg-[#C3E3EE] text-[#053247] border-2 border-[#8BAFBF] scale-105' : 'bg-[#CBD5E1] text-slate-500/70 opacity-60'}`}>
+                            {fdi}
                         </div>
                     );
                 })}
@@ -422,7 +501,7 @@ const targetRoute = route('admin.deteksi.finalize', radiograph.id_radiograph);
                             </div>
                             <div className="text-center">
                                 <p className="font-black text-[#053247] text-[12px]">Gigi #{fdi}</p>
-                                {det && (
+                                {det && det.analysis && !['akurat', 'input manual'].includes(String(det.analysis).toLowerCase()) && (
                                     <p className="text-[12px] text-emerald-600 font-bold italic truncate px-1">
                                         "{det.analysis}"
                                     </p>

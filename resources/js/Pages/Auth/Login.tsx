@@ -1,7 +1,11 @@
 import Checkbox from '@/Components/Checkbox';
 import InputError from '@/Components/InputError';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertCircle, Eye, EyeOff, X } from 'lucide-react';
+import { FormEventHandler, useEffect, useState } from 'react';
+
+const REMEMBER_LOGIN_KEY = 'detech.remember-login';
 
 export default function Login({
     status,
@@ -11,16 +15,73 @@ export default function Login({
     canResetPassword: boolean;
 }) {
     const [userType, setUserType] = useState<'faskes' | 'pasien'>('faskes');
+    const [showPassword, setShowPassword] = useState(false);
     
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         email: '',
         password: '',
         remember: false,
+        user_type: 'faskes',
     });
+
+    const loginError = errors.email || errors.password || errors.user_type;
+
+    useEffect(() => {
+        const savedLogin = window.localStorage.getItem(REMEMBER_LOGIN_KEY);
+        if (!savedLogin) return;
+
+        try {
+            const parsedLogin = JSON.parse(savedLogin) as {
+                identifier?: string;
+                userType?: 'faskes' | 'pasien';
+            };
+            const savedUserType = parsedLogin.userType === 'pasien' ? 'pasien' : 'faskes';
+
+            setUserType(savedUserType);
+            setData((currentData) => ({
+                ...currentData,
+                email: parsedLogin.identifier || '',
+                remember: true,
+                user_type: savedUserType,
+            }));
+        } catch {
+            window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
+        }
+    }, []);
+
+    const selectUserType = (type: 'faskes' | 'pasien') => {
+        setUserType(type);
+        setData('user_type', type);
+        clearErrors();
+    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+
+        if (data.remember) {
+            window.localStorage.setItem(
+                REMEMBER_LOGIN_KEY,
+                JSON.stringify({
+                    identifier: data.email,
+                    userType,
+                }),
+            );
+        } else {
+            window.localStorage.removeItem(REMEMBER_LOGIN_KEY);
+        }
+
+        setData((currentData) => ({
+            ...currentData,
+            user_type: userType,
+        }));
+
         post(route('login'), {
+            onBefore: () => {
+                setData((currentData) => ({
+                    ...currentData,
+                    user_type: userType,
+                }));
+            },
             onFinish: () => reset('password'),
         });
     };
@@ -28,6 +89,37 @@ export default function Login({
     return (
         <div className="min-h-screen bg-white font-['DM_Sans'] flex">
             <Head title="Log in" />
+
+            <AnimatePresence>
+                {loginError && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.98 }}
+                        className="fixed right-5 top-5 z-[200] w-[calc(100%-40px)] max-w-md rounded-[24px] border border-red-100 bg-white p-5 shadow-[0_24px_60px_rgba(5,50,71,0.18)]"
+                    >
+                        <div className="flex gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+                                <AlertCircle size={24} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[15px] font-black text-[#053247]">Login gagal</p>
+                                <p className="mt-1 text-sm font-medium leading-relaxed text-[#053247]/65">
+                                    {loginError}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => clearErrors()}
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#053247]/45 transition hover:bg-[#F1FBFF] hover:text-[#053247]"
+                                aria-label="Tutup pesan error"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* --- BAGIAN KIRI: BRANDING & IMAGE --- */}
 <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[#C3E3EE] via-[#8BAFBF] to-[#46626B] relative items-center justify-center p-12 overflow-hidden">
@@ -87,13 +179,15 @@ export default function Login({
                 {/* Toggle Faskes/Pasien */}
                 <div className="absolute top-12 right-12 lg:right-24 flex bg-[#C3E3EE]/40 p-1 rounded-full w-fit">
                     <button 
-                        onClick={() => setUserType('faskes')}
+                        type="button"
+                        onClick={() => selectUserType('faskes')}
                         className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${userType === 'faskes' ? 'bg-[#053247] text-white shadow-lg' : 'text-[#053247]'}`}
                     >
                         Faskes
                     </button>
                     <button 
-                        onClick={() => setUserType('pasien')}
+                        type="button"
+                        onClick={() => selectUserType('pasien')}
                         className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${userType === 'pasien' ? 'bg-[#053247] text-white shadow-lg' : 'text-[#053247]'}`}
                     >
                         Pasien
@@ -113,13 +207,16 @@ export default function Login({
                     <form onSubmit={submit} className="space-y-6">
                         {/* Input Email */}
                         <div>
-                            <label className="block text-sm font-bold text-[#053247] mb-2">Email</label>
+                            <label className="block text-sm font-bold text-[#053247] mb-2">
+                                {userType === 'pasien' ? 'NIK / Email' : 'Email'}
+                            </label>
                             <input
-                                type="email"
+                                type={userType === 'pasien' ? 'text' : 'email'}
                                 value={data.email}
-                                placeholder="Masukkan email"
+                                placeholder={userType === 'pasien' ? 'Masukkan NIK atau email' : 'Masukkan email'}
                                 className="w-full bg-white border border-gray-200 rounded-2xl py-4 px-6 text-[#053247] focus:outline-none focus:border-[#8BAFBF] focus:ring-1 focus:ring-[#8BAFBF] transition-all shadow-sm"
                                 onChange={(e) => setData('email', e.target.value)}
+                                autoComplete="username"
                                 required
                             />
                             <InputError message={errors.email} className="mt-2" />
@@ -128,14 +225,25 @@ export default function Login({
                         {/* Input Password */}
                         <div>
                             <label className="block text-sm font-bold text-[#053247] mb-2">Kata Sandi</label>
-                            <input
-                                type="password"
-                                value={data.password}
-                                placeholder="Masukkan kata sandi Anda"
-                                className="w-full bg-[#EBF5F9] border-transparent border rounded-2xl py-4 px-6 text-[#053247] focus:outline-none focus:border-[#8BAFBF] focus:bg-white transition-all"
-                                onChange={(e) => setData('password', e.target.value)}
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={data.password}
+                                    placeholder="Masukkan kata sandi Anda"
+                                    className="w-full bg-[#EBF5F9] border-transparent border rounded-2xl py-4 pl-6 pr-14 text-[#053247] focus:outline-none focus:border-[#8BAFBF] focus:bg-white transition-all"
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    autoComplete="current-password"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((value) => !value)}
+                                    className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#053247]/55 transition hover:bg-white hover:text-[#053247]"
+                                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                             <InputError message={errors.password} className="mt-2" />
                         </div>
 
@@ -146,6 +254,7 @@ export default function Login({
                                     name="remember"
                                     checked={data.remember}
                                     onChange={(e) => setData('remember', e.target.checked)}
+                                    className="border-[#C3E3EE] text-[#053247] focus:ring-[#8BAFBF]"
                                 />
                                 <span className="ms-2 text-sm font-medium text-[#053247]/70">Ingat Saya</span>
                             </label>

@@ -55,42 +55,40 @@ class DashboardController extends Controller
             ->withCount(['radiographsAsDokter as verified_count' => function($query) {
                 $query->where('status', 'verified');
             }])
+            ->withCount(['radiographsAsDokter as verified_today_count' => function($query) use ($now) {
+                $query->where('status', 'verified')
+                    ->whereDate('updated_at', $now->toDateString());
+            }])
             ->orderBy('verified_count', 'desc')
             ->take(4)
             ->get()
-            ->map(function ($user) use ($now, $totalRadiograph) {
-                // Menentukan status aktif berdasarkan update_at terbaru
-                $status = 'Tidak Aktif';
-                if ($user->updated_at && $now->diffInMinutes($user->updated_at) <= 20) {
-                    $status = 'Aktif';
-                }
-
+            ->map(function ($user) use ($totalRadiograph) {
                 return [
                     'name' => $user->name,
                     // Format: "2/125 Verifikasi Data"
                     'detail' => $user->verified_count . '/' . $totalRadiograph . ' Verifikasi Data',
+                    'todayDetail' => $user->verified_today_count . ' verifikasi hari ini',
                     'initials' => strtoupper(substr($user->name, 0, 2)),
-                    'status' => $status,
+                    'status' => $user->verified_today_count > 0 ? 'Aktif' : 'Tidak Aktif',
                 ];
             });
 
         // --- LOGIKA AKTIFITAS RADIOGRAFER ---
         $aktifitasRadiografer = User::where('role', 'radiografer')
             ->withCount('radiographsAsRadiografer')
+            ->withCount(['radiographsAsRadiografer as upload_today_count' => function($query) use ($now) {
+                $query->whereDate('created_at', $now->toDateString());
+            }])
             ->orderBy('radiographs_as_radiografer_count', 'desc')
             ->take(4)
             ->get()
-            ->map(function ($user) use ($now) {
-                $status = 'Tidak Aktif';
-                if ($user->updated_at && $now->diffInMinutes($user->updated_at) <= 20) {
-                    $status = 'Aktif';
-                }
-
+            ->map(function ($user) {
                 return [
                     'name' => $user->name,
                     'detail' => $user->radiographs_as_radiografer_count . ' Upload Data',
+                    'todayDetail' => $user->upload_today_count . ' upload hari ini',
                     'initials' => strtoupper(substr($user->name, 0, 2)),
-                    'status' => $status,
+                    'status' => $user->upload_today_count > 0 ? 'Aktif' : 'Tidak Aktif',
                 ];
             });
 

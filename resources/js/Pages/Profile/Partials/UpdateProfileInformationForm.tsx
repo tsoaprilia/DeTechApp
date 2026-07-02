@@ -4,9 +4,13 @@ import { Transition } from '@headlessui/react';
 import { Mail, User, Phone, Save } from 'lucide-react';
 
 export default function UpdateProfileInformation({ mustVerifyEmail, status, className = '' }: any) {
-    const user = usePage().props.auth.user;
+    const user = usePage().props.auth.user as any;
 
-    const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
+    const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<{
+        name: string;
+        email: string;
+        phone: string;
+    }>({
         name: user.name,
         email: user.email,
         phone: user.phone || '', // Data Phone
@@ -20,15 +24,15 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
     return (
         <section className={className}>
             <form onSubmit={submit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     {/* INPUT NAMA */}
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-[#053247] uppercase tracking-widest ml-4 opacity-60">Nama Lengkap</label>
+                        <label className="ml-3 text-[10px] font-black uppercase tracking-widest text-[#053247]/60">Nama Lengkap</label>
                         <div className="relative group">
                             <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF] group-focus-within:text-[#053247] transition-all"><User size={18}/></div>
                             <input 
                                 value={data.name} onChange={(e) => setData('name', e.target.value)}
-                                className="w-full pl-14 pr-6 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247] outline-none focus:border-[#053247] focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner" 
+                                className="w-full rounded-[20px] border border-[#C3E3EE] bg-[#F8FDFF] py-4 pl-14 pr-5 font-bold text-[#053247] outline-none transition-all focus:border-[#053247] focus:bg-white focus:ring-4 focus:ring-[#053247]/5" 
                             />
                         </div>
                         <InputError message={errors.name} className="ml-4" />
@@ -36,12 +40,12 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
 
                     {/* INPUT EMAIL */}
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-[#053247] uppercase tracking-widest ml-4 opacity-60">Alamat Email</label>
+                        <label className="ml-3 text-[10px] font-black uppercase tracking-widest text-[#053247]/60">Alamat Email</label>
                         <div className="relative group">
                             <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF] group-focus-within:text-[#053247] transition-all"><Mail size={18}/></div>
                             <input 
                                 value={data.email} onChange={(e) => setData('email', e.target.value)}
-                                className="w-full pl-14 pr-6 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247] outline-none focus:border-[#053247] focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner" 
+                                className="w-full rounded-[20px] border border-[#C3E3EE] bg-[#F8FDFF] py-4 pl-14 pr-5 font-bold text-[#053247] outline-none transition-all focus:border-[#053247] focus:bg-white focus:ring-4 focus:ring-[#053247]/5" 
                             />
                         </div>
                         <InputError message={errors.email} className="ml-4" />
@@ -49,22 +53,22 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
 
                     {/* INPUT PHONE - YANG KAMU MINTA */}
                     <div className="space-y-2 md:col-span-2">
-                        <label className="text-[10px] font-black text-[#053247] uppercase tracking-widest ml-4 opacity-60">Nomor Telepon / WhatsApp</label>
+                        <label className="ml-3 text-[10px] font-black uppercase tracking-widest text-[#053247]/60">Nomor Telepon / WhatsApp</label>
                         <div className="relative group">
                             <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF] group-focus-within:text-[#053247] transition-all"><Phone size={18}/></div>
                             <input 
                                 value={data.phone} onChange={(e) => setData('phone', e.target.value)}
-                                className="w-full pl-14 pr-6 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247] outline-none focus:border-[#053247] focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner" 
+                                className="w-full rounded-[20px] border border-[#C3E3EE] bg-[#F8FDFF] py-4 pl-14 pr-5 font-bold text-[#053247] outline-none transition-all focus:border-[#053247] focus:bg-white focus:ring-4 focus:ring-[#053247]/5" 
                             />
                         </div>
                         <InputError message={errors.phone} className="ml-4" />
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 pt-4">
+                <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-center">
                     <button 
                         disabled={processing}
-                        className="flex items-center gap-2 px-10 py-4 bg-[#053247] text-white rounded-[20px] font-black text-sm uppercase tracking-widest hover:bg-[#46626B] transition-all shadow-xl active:scale-95 disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 rounded-[20px] bg-[#053247] px-8 py-4 text-sm font-black uppercase tracking-widest text-white shadow-xl transition-all hover:bg-[#46626B] active:scale-95 disabled:opacity-50"
                     >
                         <Save size={18} /> Simpan Profil
                     </button>

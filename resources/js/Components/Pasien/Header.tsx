@@ -2,7 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { LogOut } from 'lucide-react';
 
 export default function Header({ user, profileImage }: any) {
-    const { post } = useForm();
+    const { post } = useForm({});
 
     const handleLogout = (e: React.FormEvent) => {
         e.preventDefault();

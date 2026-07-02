@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { 
     LayoutGrid, 
     GitFork, 
@@ -16,6 +16,10 @@ interface Props {
 }
 
 export default function Sidebar({ isOpen, setIsOpen, auth }: Props) {
+    const handleLogout = () => {
+        router.post(route('logout'));
+    };
+
     const menuItems = [
         { name: 'Dashboard', icon: <LayoutGrid size={20} fill="currentColor" />, link: 'admin.dashboard' },
         { name: 'Deteksi Gigi Susu', icon: <GitFork size={20} />, link: 'admin.deteksi' },
@@ -66,17 +70,16 @@ export default function Sidebar({ isOpen, setIsOpen, auth }: Props) {
                 </nav>
 
                 <div className="px-6 py-8 mt-auto">
-                    <Link
-                        href={route('logout')}
-                        method="post"
-                        as="button"
+                    <button
+                        type="button"
+                        onClick={handleLogout}
                         className="flex items-center justify-center gap-3 w-full bg-[#C3E3EE] py-2.5 rounded-2xl font-black text-[#053247] shadow-[0_12px_24px_rgba(5,50,71,0.15)] hover:scale-[1.02] transition-all active:scale-95 group uppercase tracking-[0.15em] text-[12px]"
                     >
                         <div className="bg-[#053247]/10 p-1.5 rounded-lg transition-colors group-hover:bg-[#053247]/20">
                             <LogOut size={16} strokeWidth={3} />
                         </div>
                         <span>KELUAR</span>
-                    </Link>
+                    </button>
                 </div>
             </aside>
         </>

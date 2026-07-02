@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Patient;
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
@@ -27,8 +30,9 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
+            'user_type' => ['required', Rule::in(['faskes', 'pasien'])],
         ];
     }
 
@@ -41,15 +45,73 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $identifier = $this->normalizeIdentifier($this->string('email')->toString());
+        $userType = $this->string('user_type')->toString();
+        $user = $this->resolveUser($identifier, $userType);
+
+        if (
+            ! $user ||
+            ! Auth::attempt([
+                'email' => $user->email,
+                'password' => $this->string('password')->toString(),
+            ], $this->boolean('remember'))
+        ) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => 'Email/NIK atau kata sandi tidak sesuai.',
             ]);
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    private function resolveUser(string $identifier, string $userType): ?User
+    {
+        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
+
+        if ($userType === 'pasien') {
+            if ($isEmail) {
+                return User::where('email', $identifier)
+                    ->where('role', 'pasien')
+                    ->first();
+            }
+
+            return $this->resolvePatientByNik($identifier);
+        }
+
+        if (! $isEmail) {
+            return $this->resolvePatientByNik($identifier);
+        }
+
+        return User::where('email', $identifier)
+            ->whereIn('role', ['admin', 'dokter', 'radiografer'])
+            ->first();
+    }
+
+    private function resolvePatientByNik(string $identifier): ?User
+    {
+        $nik = preg_replace('/\D+/', '', $identifier);
+
+        if (! $nik) {
+            return null;
+        }
+
+        return Patient::with(['user' => fn ($query) => $query->where('role', 'pasien')])
+            ->where('nik', $nik)
+            ->first()
+            ?->user;
+    }
+
+    private function normalizeIdentifier(string $identifier): string
+    {
+        $identifier = trim($identifier);
+
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            return $identifier;
+        }
+
+        return preg_replace('/\s+/', '', $identifier);
     }
 
     /**

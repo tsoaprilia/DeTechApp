@@ -36,13 +36,13 @@ export default function DokterDashboard({ auth, stats, antrean, selesai }: any) 
                                     <div className="p-2 bg-[#FFF9F0] text-[#FF9F1C] rounded-xl"><Clock size={24} /></div>
                                     Antrean Verifikasi
                                 </h3>
-                                <Link href={route('dokter.verifikasi.index')} className="text-xs font-black text-[#8BAFBF] hover:text-[#053247] uppercase tracking-widest flex items-center gap-1">
+                                <Link href={route('dokter.verifikasi.index')} className="rounded-full bg-[#F1FBFF] px-4 py-2 text-xs font-black text-[#8BAFBF] hover:bg-[#053247] hover:text-white uppercase tracking-widest flex items-center gap-1 transition-all">
                                     Lihat Semua <ArrowRight size={14} />
                                 </Link>
                             </div>
 
                             <div className="space-y-4">
-                                {antrean.map((item: any, i: number) => (
+                                {antrean.length > 0 ? antrean.map((item: any, i: number) => (
                                     <Link 
                                         key={i} 
                                         href={route('admin.deteksi.detail', item.id)}
@@ -60,9 +60,15 @@ export default function DokterDashboard({ auth, stats, antrean, selesai }: any) 
                                         <div className="text-right">
                                             <div className="px-4 py-1.5 bg-[#FF9F1C] text-white text-[9px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-orange-100">Verifikasi</div>
                                             <p className="text-[10px] font-bold text-[#8BAFBF] mt-2 italic">{item.time}</p>
+                                            <p className="text-[9px] font-black text-[#8BAFBF]/70 mt-0.5">{item.date}</p>
                                         </div>
                                     </Link>
-                                ))}
+                                )) : (
+                                    <div className="rounded-[35px] border border-dashed border-[#C3E3EE] bg-[#F8FDFF] p-10 text-center">
+                                        <p className="text-lg font-black text-[#053247]">Belum ada antrean verifikasi</p>
+                                        <p className="mt-2 text-sm font-bold text-[#8BAFBF]">Data terbaru akan muncul otomatis di sini.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -72,24 +78,33 @@ export default function DokterDashboard({ auth, stats, antrean, selesai }: any) 
                                 <Activity className="absolute -right-10 -bottom-10 w-48 h-48 text-white/5 rotate-12" />
                                 <h4 className="text-xl font-black mb-2 relative z-10">Halo, dr. {auth.user.name}!</h4>
                                 <p className="text-white/60 text-sm leading-relaxed relative z-10">
-                                    Ada <span className="text-emerald-400 font-black">{stats.perluVerifikasi} pasien</span> baru yang menunggu validasi radiografi gigi susu hari ini.
+                                    Ada <span className="text-emerald-400 font-black">{stats.perluVerifikasiHariIni} pasien</span> baru yang menunggu validasi radiografi gigi susu hari ini.
                                 </p>
                             </div>
 
                             <div className="bg-white p-8 rounded-[45px] shadow-sm border border-[#C3E3EE]">
-                                <h5 className="font-black text-[#053247] mb-6 flex items-center gap-2">
-                                    <div className="w-1.5 h-5 bg-[#C3E3EE] rounded-full" /> Selesai Diverifikasi
-                                </h5>
+                                <div className="mb-6 flex items-center justify-between gap-4">
+                                    <h5 className="font-black text-[#053247] flex items-center gap-2">
+                                        <div className="w-1.5 h-5 bg-[#C3E3EE] rounded-full" /> Selesai Diverifikasi
+                                    </h5>
+                                    <Link href={route('admin.riwayat')} className="text-[10px] font-black uppercase tracking-widest text-[#8BAFBF] hover:text-[#053247] flex items-center gap-1">
+                                        Lihat Semua <ArrowRight size={12} />
+                                    </Link>
+                                </div>
                                 <div className="space-y-4">
-                                    {selesai.map((item: any, i: number) => (
-                                        <div key={i} className="flex items-center justify-between p-4 bg-[#F4F9FB] rounded-[25px]">
+                                    {selesai.length > 0 ? selesai.map((item: any, i: number) => (
+                                        <Link key={i} href={route('admin.deteksi.detail', item.id)} className="flex items-center justify-between p-4 bg-[#F4F9FB] hover:bg-white border border-transparent hover:border-[#C3E3EE] rounded-[25px] transition-all">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#8BAFBF] font-black text-xs border border-[#C3E3EE] shadow-sm">{item.initials}</div>
                                                 <p className="text-sm font-black text-[#053247]">{item.name}</p>
                                             </div>
                                             <div className="text-[10px] font-bold text-[#8BAFBF]">{item.date}</div>
+                                        </Link>
+                                    )) : (
+                                        <div className="rounded-[25px] border border-dashed border-[#C3E3EE] bg-[#F4F9FB] p-6 text-center">
+                                            <p className="text-sm font-black text-[#053247]">Belum ada data selesai</p>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         </div>

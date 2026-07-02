@@ -22,7 +22,7 @@ class VerifikasiController extends Controller
                     'patient_name' => $rad->patient->user->name,
                     'nik' => $rad->patient_nik,
                     'image' => $rad->image,
-                    'date' => $rad->created_at->format('d/12/Y'), // Sesuaikan format tgl di gambar
+                    'date' => $rad->created_at->format('d/m/Y'),
                     'status' => 'Menunggu'
                 ];
             });

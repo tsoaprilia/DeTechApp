@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Head, useForm, router, Link } from '@inertiajs/react';
 import Sidebar from '@/Components/Admin/Sidebar';
 import Header from '@/Components/Admin/Header';
-import { User, Search, Edit2, Trash2, Plus, Phone, Mail, X, Save, Lock, Hash, Users, AlertCircle, MapPin, Calendar, RefreshCcw, LucideEye } from 'lucide-react';
+import DatePickerHeader from '@/Components/DatePickerHeader';
+import { User, Search, Edit2, Trash2, Plus, Phone, Mail, X, Save, Lock, Hash, Users, AlertCircle, MapPin, Calendar, LucideEye, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import "../../../css/datepicker-custom.css";
 
 export default function Pasien({ auth, patients = [] }: { auth: any, patients: any[] }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,6 +15,9 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
     const [selectedNik, setSelectedNik] = useState<string | null>(null);
     const [editData, setEditData] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     // Shortcut untuk cek role
     const isDokter = auth.user.role === 'dokter';
@@ -33,16 +38,26 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
         (p.user?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
         (p.nik || "").includes(searchQuery)
     ) : [];
+    const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+    const visibleData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const startItem = filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, filteredData.length);
+
+    const updateSearch = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+    };
 
     const openModal = (patient: any = null) => {
         if (isDokter) return; // Dokter dilarang buka modal tambah/edit
         form.clearErrors();
+        setShowPassword(false);
         if (patient) {
             setEditData(patient);
             form.setData({
                 nik: patient.nik,
                 name: patient.user?.name || '',
-                email: patient.user?.email || '',
+                email: patient.user?.email?.endsWith('@detech.id') ? '' : patient.user?.email || '',
                 phone: patient.user?.phone || '',
                 birth_place: patient.birth_place || '',
                 birth_date: patient.birth_date ? new Date(patient.birth_date) : null,
@@ -113,7 +128,7 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                         <div className="flex items-center gap-4 w-full md:w-auto">
                             <div className="relative w-full md:w-72 group">
                                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#8BAFBF] group-focus-within:text-[#053247]" size={18} />
-                                <input type="text" placeholder="Cari NIK/Nama..." className="w-full pl-14 pr-5 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] outline-none focus:border-[#053247] transition-all" onChange={(e) => setSearchQuery(e.target.value)} />
+                                <input type="text" placeholder="Cari NIK/Nama..." className="w-full pl-14 pr-5 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] outline-none focus:border-[#053247] transition-all" onChange={(e) => updateSearch(e.target.value)} />
                             </div>
                             
                             {/* HANYA ADMIN/RADIOGRAFER YANG BISA TAMBAH PASIEN */}
@@ -137,7 +152,7 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#F1FBFF]">
-                                    {filteredData.map((p) => (
+                                    {visibleData.map((p) => (
                                         <tr key={p.nik} className="hover:bg-[#F1FBFF]/40 transition-colors group">
                                             <td className="px-8 py-5 text-left font-bold text-[#053247]">{p.nik}</td>
                                             <td className="px-8 py-5 text-left font-bold text-[#3B5862]">{p.user?.name || '-'}</td>
@@ -160,9 +175,20 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                                             </td>
                                         </tr>
                                     ))}
+                                    {visibleData.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="px-8 py-14 text-center">
+                                                <div className="mx-auto max-w-md rounded-[28px] border-2 border-dashed border-[#C3E3EE] bg-[#F8FDFF] p-8">
+                                                    <p className="text-lg font-black text-[#053247]">Data tidak ditemukan</p>
+                                                    <p className="mt-1 text-sm font-bold text-[#8BAFBF]">Coba ubah NIK atau nama pasien.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+                        <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} startItem={startItem} endItem={endItem} totalItems={filteredData.length} label="pasien" />
                     </div>
                 </div>
             </main>
@@ -180,14 +206,33 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <ModalInput label="NIK (16 Digit)" value={form.data.nik} onChange={(e:any) => form.setData('nik', e.target.value.replace(/\D/g, ''))} icon={<Hash size={18}/>} error={form.errors.nik} maxLength={16} readOnly={!!editData} />
                                 <ModalInput label="Nama Lengkap" value={form.data.name} onChange={(e:any) => form.setData('name', e.target.value)} icon={<User size={18}/>} error={form.errors.name} />
-                                <ModalInput label="Email" type="email" value={form.data.email} onChange={(e:any) => form.setData('email', e.target.value)} icon={<Mail size={18}/>} error={form.errors.email} />
+                                <ModalInput
+                                    label="Email (Opsional)"
+                                    type="email"
+                                    value={form.data.email}
+                                    onChange={(e:any) => form.setData('email', e.target.value)}
+                                    icon={<Mail size={18}/>}
+                                    error={form.errors.email}
+                                    placeholder="Boleh dikosongkan"
+                                    hint="Isi email jika pasien ingin reset password lewat email."
+                                />
                                 <ModalInput label="No. Telepon" value={form.data.phone} onChange={(e:any) => form.setData('phone', e.target.value.replace(/\D/g, ''))} icon={<Phone size={18}/>} error={form.errors.phone} />
                                 <ModalInput label="Tempat Lahir" value={form.data.birth_place} onChange={(e:any) => form.setData('birth_place', e.target.value)} icon={<MapPin size={18}/>} error={form.errors.birth_place} />
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70">Tanggal Lahir</label>
                                     <div className="relative">
                                         <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF] z-10" size={18} />
-                                        <DatePicker selected={form.data.birth_date} onChange={(date: Date | null) => form.setData('birth_date', date)} className="w-full pl-16 pr-6 py-4 bg-white border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247] outline-none shadow-inner focus:border-[#053247] transition-all" dateFormat="dd/MM/yyyy" placeholderText="Pilih tanggal" />
+                                        <DatePicker
+                                            selected={form.data.birth_date}
+                                            onChange={(date: Date | null) => form.setData('birth_date', date)}
+                                            renderCustomHeader={(props) => <DatePickerHeader {...props} />}
+                                            calendarClassName="detech-datepicker"
+                                            popperClassName="z-[120]"
+                                            wrapperClassName="w-full"
+                                            className="w-full pl-16 pr-6 py-4 bg-white border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247] outline-none shadow-inner focus:border-[#053247] transition-all"
+                                            dateFormat="dd/MM/yyyy"
+                                            placeholderText="Pilih tanggal"
+                                        />
                                     </div>
                                     {form.errors.birth_date && <p className="text-red-500 text-[10px] font-black italic ml-4">{form.errors.birth_date}</p>}
                                 </div>
@@ -201,7 +246,47 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
                                         ))}
                                     </div>
                                 </div>
-                                <ModalInput label="Password" type="password" value={form.data.password} onChange={(e:any) => form.setData('password', e.target.value)} icon={<Lock size={18}/>} error={form.errors.password} placeholder={editData ? "Kosongkan jika tak diubah" : "********"} />
+                                {editData && (
+                                    <div className="space-y-2 group text-left">
+                                        <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70">
+                                            Password Saat Ini
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF]">
+                                                <Lock size={18} />
+                                            </div>
+                                            <input
+                                                type="password"
+                                                value="password-ter-enkripsi"
+                                                disabled
+                                                className="w-full pl-16 pr-6 py-4 bg-[#F8FDFF] border border-[#C3E3EE] rounded-[22px] font-bold text-[#053247]/55 outline-none shadow-inner cursor-not-allowed"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-[#8BAFBF] ml-4 leading-relaxed">
+                                            Password asli tersimpan terenkripsi, jadi tidak bisa ditampilkan. Isi password baru di bawah untuk menggantinya.
+                                        </p>
+                                    </div>
+                                )}
+                                <ModalInput
+                                    label={editData ? "Password Baru" : "Password"}
+                                    type={showPassword ? "text" : "password"}
+                                    value={form.data.password}
+                                    onChange={(e:any) => form.setData('password', e.target.value)}
+                                    icon={<Lock size={18}/>}
+                                    error={form.errors.password}
+                                    placeholder={editData ? "Isi jika ingin mengganti password" : "Kosongkan untuk default: password"}
+                                    hint={editData ? "Kosongkan jika tidak ingin mengganti password." : "Jika kosong, pasien login memakai NIK dan password default: password."}
+                                    rightAction={
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword((value) => !value)}
+                                            className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#8BAFBF] transition hover:bg-[#F1FBFF] hover:text-[#053247]"
+                                            aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                                        >
+                                            {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                                        </button>
+                                    }
+                                />
                                 <div className="md:col-span-2"><ModalInput label="Alamat Lengkap" value={form.data.address} onChange={(e:any) => form.setData('address', e.target.value)} icon={<MapPin size={18}/>} error={form.errors.address} /></div>
                             </div>
                             <button disabled={form.processing} className="w-full py-5 bg-[#053247] text-white rounded-[28px] font-black text-xl shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-3">
@@ -232,7 +317,39 @@ export default function Pasien({ auth, patients = [] }: { auth: any, patients: a
     );
 }
 
-function ModalInput({ label, value, onChange, icon, error, type = "text", placeholder = "", maxLength, readOnly }: any) {
+function Pagination({ currentPage, totalPages, setCurrentPage, startItem, endItem, totalItems, label }: any) {
+    return (
+        <div className="flex flex-col gap-4 border-t border-[#F1FBFF] px-6 py-5 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm font-bold text-[#8BAFBF]">
+                Menampilkan <span className="text-[#053247]">{startItem}-{endItem}</span> dari <span className="text-[#053247]">{totalItems}</span> {label}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+                <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page: number) => Math.max(1, page - 1))} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#C3E3EE] text-[#053247] transition-all hover:bg-[#053247] hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white disabled:hover:text-[#053247]">
+                    <ChevronLeft size={19} />
+                </button>
+                {Array.from({ length: totalPages }).map((_, index) => {
+                    const page = index + 1;
+                    const shouldShow = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                    const previousShouldShow = page > 1 && (page - 1 === 1 || page - 1 === totalPages || Math.abs(page - 1 - currentPage) <= 1);
+
+                    if (!shouldShow && previousShouldShow) return <span key={`ellipsis-${page}`} className="px-2 text-[#8BAFBF] font-black">...</span>;
+                    if (!shouldShow) return null;
+
+                    return (
+                        <button type="button" key={page} onClick={() => setCurrentPage(page)} className={`h-11 min-w-11 rounded-2xl px-4 text-sm font-black transition-all ${currentPage === page ? 'bg-[#053247] text-white shadow-[0_10px_24px_rgba(5,50,71,0.18)]' : 'border border-[#C3E3EE] bg-white text-[#053247] hover:bg-[#F1FBFF]'}`}>
+                            {page}
+                        </button>
+                    );
+                })}
+                <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page: number) => Math.min(totalPages, page + 1))} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#C3E3EE] text-[#053247] transition-all hover:bg-[#053247] hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white disabled:hover:text-[#053247]">
+                    <ChevronRight size={19} />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function ModalInput({ label, value, onChange, icon, error, type = "text", placeholder = "", maxLength, readOnly, rightAction = null, hint = "" }: any) {
     return (
         <div className="space-y-2 group text-left">
             <label className="text-xs font-black text-[#053247] uppercase tracking-widest ml-2 opacity-70">{label}</label>
@@ -240,9 +357,11 @@ function ModalInput({ label, value, onChange, icon, error, type = "text", placeh
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8BAFBF] group-focus-within:text-[#053247] transition-colors">{icon}</div>
                 <input 
                     type={type} value={value} onChange={onChange} placeholder={placeholder} maxLength={maxLength} readOnly={readOnly}
-                    className={`w-full pl-16 pr-6 py-4 bg-white border ${error ? 'border-red-400 focus:border-red-400' : 'border-[#C3E3EE] focus:border-[#053247]'} ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''} rounded-[22px] font-bold text-[#053247] outline-none focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner placeholder:text-[#8BAFBF]/40`} 
+                    className={`w-full pl-16 ${rightAction ? 'pr-16' : 'pr-6'} py-4 bg-white border ${error ? 'border-red-400 focus:border-red-400' : 'border-[#C3E3EE] focus:border-[#053247]'} ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''} rounded-[22px] font-bold text-[#053247] outline-none focus:ring-4 focus:ring-[#053247]/5 transition-all shadow-inner placeholder:text-[#8BAFBF]/40`} 
                 />
+                {rightAction}
             </div>
+            {hint && !error && <p className="text-[10px] font-bold text-[#8BAFBF] ml-4 leading-relaxed">{hint}</p>}
             {error && <p className="text-red-500 text-[10px] font-black italic ml-4 mt-1 uppercase tracking-wider">{error}</p>}
         </div>
     );

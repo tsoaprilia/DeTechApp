@@ -57,7 +57,7 @@ class RadiograferController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = User::findOrFail($id);
+        $user = User::where('role', 'radiografer')->findOrFail($id);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -92,7 +92,7 @@ class RadiograferController extends Controller
      */
     public function destroy($id)
 {
-    $user = User::findOrFail($id);
+    $user = User::where('role', 'radiografer')->findOrFail($id);
     $user->delete();
 
     // Pastikan menggunakan rute index

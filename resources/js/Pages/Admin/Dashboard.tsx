@@ -157,9 +157,12 @@ function ActivityCard({ title, data }: any) {
                             <div className="text-left">
                                 <p className="text-sm font-black text-[#053247]">{item.name}</p>
                                 <p className="text-[10px] font-bold text-[#8BAFBF]">{item.detail}</p>
+                                {item.todayDetail && (
+                                    <p className="mt-0.5 text-[9px] font-black uppercase tracking-wide text-[#46626B]/60">{item.todayDetail}</p>
+                                )}
                             </div>
                         </div>
-                        <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${item.status === 'Aktif' ? 'bg-emerald-100 text-emerald-600' : item.status === 'Tidak Aktif' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>{item.status}</div>
+                        <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${item.status === 'Aktif' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{item.status}</div>
                     </div>
                 ))}
             </div>

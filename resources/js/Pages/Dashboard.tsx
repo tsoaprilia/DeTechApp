@@ -7,11 +7,17 @@ export default function Dashboard({ auth, patient, radiographs, stats }: any) {
     const [searchId, setSearchId] = useState("");
 
     const getProfileImage = () => {
-        const name = encodeURIComponent(auth.user.name);
-        if (patient?.gender === 'female') {
-            return `https://ui-avatars.com/api/?name=${name}&background=fce4ec&color=d81b60`;
-        }
-        return `https://ui-avatars.com/api/?name=${name}&background=e3f2fd&color=1976d2`;
+        const name = auth.user.name || auth.user.email || 'Pasien';
+        const initials = getInitials(name);
+        const background = getAvatarColor(name);
+        const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+                <rect width="160" height="160" rx="80" fill="${background}" />
+                <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="58" font-weight="700">${initials}</text>
+            </svg>
+        `;
+
+        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
     };
 
     const scrollToHistory = () => {
@@ -151,6 +157,35 @@ export default function Dashboard({ auth, patient, radiographs, stats }: any) {
             </main>
         </div>
     );
+}
+
+function getInitials(name: string) {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+
+    if (words.length >= 2) {
+        return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+
+    return (words[0] || 'P').slice(0, 2).toUpperCase();
+}
+
+function getAvatarColor(seed: string) {
+    const colors = [
+        '#053247',
+        '#386274',
+        '#4C7282',
+        '#0F766E',
+        '#2563EB',
+        '#7C3AED',
+        '#BE123C',
+        '#C2410C',
+        '#15803D',
+        '#0E7490',
+    ];
+
+    const hash = seed.split('').reduce((total, char) => total + char.charCodeAt(0), 0);
+
+    return colors[hash % colors.length];
 }
 
 function InfoField({ label, value }: any) {

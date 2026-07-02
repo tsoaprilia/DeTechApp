@@ -11,8 +11,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http; // WAJIB ADA untuk konek ke Flask
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DetectionController extends Controller
 {
@@ -45,7 +48,22 @@ class DetectionController extends Controller
         'birth_date' => 'required|date',
         'address' => 'required|string',
         // JANGAN masukkan auth()->id() di sini
+    ], [
+        'image.required' => 'Silakan upload gambar radiografi gigi.',
+        'image.image' => 'File harus berupa gambar radiografi gigi.',
+        'image.mimes' => 'Upload radiografi hanya menerima format PNG, JPG, atau JPEG.',
+        'image.max' => 'Ukuran gambar radiografi maksimal 10MB.',
     ]);
+
+    $dimensions = getimagesize($request->file('image')->getRealPath());
+    $width = $dimensions[0] ?? 0;
+    $height = $dimensions[1] ?? 0;
+
+    if ($width < 200 || $height < 200 || ($height > 0 && ($width / $height) < 1.45)) {
+        throw ValidationException::withMessages([
+            'image' => 'Gambar bukan radiografi gigi. Upload citra radiografi panoramik gigi dengan orientasi melebar.',
+        ]);
+    }
 
     return DB::transaction(function () use ($request) {
         $patient = Patient::find($request->nik);
@@ -109,6 +127,22 @@ $id_rad = 'RAD-' . date('dmyHis') . '-' . sprintf('%03d', auth()->id());
     return Inertia::render('Admin/DetailDeteksi', ['radiograph' => $radiograph]);
 }
 
+public function printPDF($id)
+{
+    $radiograph = Radiograph::with(['detections', 'dokter', 'patient.user', 'radiografer'])
+        ->where('id_radiograph', $id)
+        ->firstOrFail();
+
+    abort_unless($radiograph->status === 'verified', 404);
+
+    $verifyUrl = route('verify.pemeriksaan', $radiograph->id_radiograph);
+    $qrcode = base64_encode(QrCode::format('svg')->size(100)->errorCorrection('H')->generate($verifyUrl));
+
+    $pdf = Pdf::loadView('pdf.hasil_deteksi', compact('radiograph', 'qrcode'));
+
+    return $pdf->download('Hasil_Deteksi_'.$radiograph->id_radiograph.'.pdf');
+}
+
    // DetectionController.php
 
 // DetectionController.php
@@ -125,12 +159,14 @@ public function analyze($id)
 
         if ($response->successful()) {
             $data = $response->json();
+            $results = $data['results'] ?? [];
+            $resultImage = $data['result_image'] ?? basename($radiograph->image);
 
             // PAKAI RENDER (Bukan Redirect): Data jadi Props permanen
             return Inertia::render('Admin/DetailDeteksi', [
                 'radiograph' => $radiograph,
-                'temp_results' => $data['results'],
-                'temp_image' => 'radiographs/' . $data['result_image'] // Pastikan ada result_
+                'temp_results' => $results,
+                'temp_image' => 'radiographs/' . $resultImage // Tetap kirim image walau hasil deteksi kosong
             ]);
         }
     } catch (\Exception $e) {
@@ -151,10 +187,13 @@ public function analyze($id)
         // 1. Simpan detail gigi ke tabel detections (HAPUS id_dokter DARI SINI)
         if (!empty($detections)) {
             foreach ($detections as $item) {
+                $analysis = trim((string) ($item['keterangan'] ?? ''));
+                $analysis = in_array(strtolower($analysis), ['akurat', 'input manual']) ? '' : $analysis;
+
                 DB::table('detections')->insert([
                     'id_radiograph' => $id,
                     'no_fdi'        => $item['fdi'],
-                    'analysis'      => $item['keterangan'] ?? 'Akurat', 
+                    'analysis'      => $analysis, 
                     // id_dokter tidak boleh ada di sini karena akan menyebabkan error
                     'created_at'    => now(),
                     'updated_at'    => now(),
